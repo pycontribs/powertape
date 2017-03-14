@@ -17,7 +17,7 @@ def venv(String environment='.venv', String script) {
 timestamps {
 
   ansiColor('xterm') {
-    
+
     // some tools could fail if no TERM is defined
     env.TERM =  env.TERM ?: 'xterm-color'
     // Inspired from http://unix.stackexchange.com/questions/148/colorizing-your-terminal-and-shell-environment
@@ -37,6 +37,14 @@ timestamps {
             extensions: scm.extensions + [[$class: 'CleanCheckout']],
             userRemoteConfigs: scm.userRemoteConfigs
             ])
+
+          git_branch = env.BRANCH_NAME ?: sh(returnStdout: true, script: 'git rev-parse --abbrev-ref HEAD').trim()
+          git_commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+
+          package_name = sh(returnStdout: true, script: 'python setup.py -q --name').trim()
+          package_version = sh(returnStdout: true, script: 'python setup.py -q --version').trim()
+
+          currentBuild.displayName = "${package_name}-${package_version}@${git_branch}"
 
           sh """set
           which python
