@@ -17,6 +17,13 @@ def venv(String environment='.venv', String script) {
 timestamps {
 
   ansiColor('xterm') {
+    
+    // some tools could fail if no TERM is defined
+    env.TERM =  env.TERM ?: 'xterm-color'
+    // Inspired from http://unix.stackexchange.com/questions/148/colorizing-your-terminal-and-shell-environment
+    env.ANSIBLE_FORCE_COLOR = env.ANSIBLE_FORCE_COLOR ?: 'true'
+    env.CLICOLOR = env.CLICOLOR ?: '1'
+    env.LSCOLORS = env.LSCOLORS ?: 'ExFxCxDxBxegedabagacad'
 
     node('master') {
 
@@ -51,6 +58,7 @@ timestamps {
           pwd
           ls -la
           ./bin/sample.sh
+          pip install -e .
           tox
           '''
         }
