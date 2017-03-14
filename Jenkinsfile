@@ -9,7 +9,7 @@ def venv(String environment='.venv', String script) {
 
     sh """#!/bin/bash
     set -ex
-    [ ! -d "${environment}" ] && virtualenv --system-site-packages --relocatable "${environment}"
+    [ ! -d "${environment}" ] && virtualenv --system-site-packages "${environment}"
     source ${environment}/bin/activate
     """ + script
 }
