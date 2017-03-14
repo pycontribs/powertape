@@ -15,33 +15,36 @@ def venv(String environment='.venv', String script) {
 }
 
 timestamps {
-  
-  node('master') {
 
-      stage('prep') {
-        sh """set
-        which python
-        """
+  ansiColor('xterm') {
 
-        venv '''
-        pip install -U pip wheel setuptools
-        pip freeze | tee pip-freeze.txt
-        pip check || "echo WARNING: pip checked returned $? error."
-        which python
-        '''
-      }
+    node('master') {
 
-      stage('lint') {
-      }
+        stage('prep') {
+          sh """set
+          which python
+          """
 
-      stage('unit') {
-      }
+          venv '''
+          pip install -U pip wheel setuptools
+          pip freeze | tee pip-freeze.txt
+          pip check || "echo WARNING: pip checked returned $? error."
+          which python
+          '''
+        }
 
-      stage('integration') {
-      }
+        stage('lint') {
+        }
 
-      stage('clean') {
-      }
+        stage('unit') {
+        }
+
+        stage('integration') {
+        }
+
+        stage('clean') {
+        }
 
     }
+  }
 }
