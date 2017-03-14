@@ -1,5 +1,13 @@
 #!/usr/bin/env groovy
 
+
+// https://st-g.de/2016/12/parametrized-jenkins-pipelines
+properties([
+  parameters([
+    string(name: 'DEBUG', defaultValue: '', description: 'Enables debug mode which increase verbosity level.', )
+   ])
+])
+
 /*
    Runs a command inside a virtual environment, creates the virtualenv if it does not exist.
 
