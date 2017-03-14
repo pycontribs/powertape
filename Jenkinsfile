@@ -27,7 +27,7 @@ timestamps {
 
           venv '''
           pip install -U pip wheel setuptools
-          pip freeze | tee pip-freeze.txt
+          pip freeze | tee pip-freeze.log
           pip check || "echo WARNING: pip checked returned $? error."
           which python
           '''
@@ -37,6 +37,12 @@ timestamps {
         }
 
         stage('unit') {
+          venv '''
+          pwd
+          ls -la
+          ./bin/sample.sh
+          tox
+          '''
         }
 
         stage('integration') {
