@@ -21,6 +21,16 @@ timestamps {
     node('master') {
 
         stage('prep') {
+
+          // https://support.cloudbees.com/hc/en-us/articles/226122247-How-to-Customize-Checkout-for-Pipeline-Multibranch
+          // clean needed to avoid potential leftovers from a reused workspace
+          checkout([
+            $class: 'GitSCM',
+            branches: scm.branches,
+            extensions: scm.extensions + [[$class: 'CleanCheckout']],
+            userRemoteConfigs: scm.userRemoteConfigs
+            ])
+
           sh """set
           which python
           """
