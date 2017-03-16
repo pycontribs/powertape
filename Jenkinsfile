@@ -106,8 +106,10 @@ timestamps {
             finally {
                  stage('clean') {
 
+                   step([$class: 'ArtifactArchiver', artifacts: '**/*.log'])
+
                    step $class: 'JUnitResultArchiver',
-                        testResults: '**/TEST-*.xml **/nosetests.xml, **/tempest-results-*.xml **/*.log **/junit.xml'
+                        testResults: '**/TEST-*.xml **/nosetests.xml, **/tempest-results-*.xml **/junit.xml'
 
                    } // end-clean
                  } // finally
