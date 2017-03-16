@@ -49,6 +49,12 @@ timestamps {
                     ])
 
                   git_branch = env.BRANCH_NAME ?: sh(returnStdout: true, script: 'git rev-parse --abbrev-ref HEAD').trim()
+                  if (git_branch.length() > 15 || git_branch.contains(' ')) {
+                    // to avoid messing with jenkins UI or breaking other things in scripts
+                    println "WARNING: Identified unsafe value for git branch name, falling back to UNKNOWN value: ${git_branch}"
+                    git_branch = 'UNKNOWN'
+                  }
+
                   git_commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
 
                   package_name = sh(returnStdout: true, script: 'python setup.py -q --name').trim()
