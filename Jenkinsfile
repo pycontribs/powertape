@@ -26,78 +26,81 @@ timestamps {
 
   ansiColor('xterm') {
 
-    try {
-        // some tools could fail if no TERM is defined
-        env.TERM =  env.TERM ?: 'xterm-color'
-        // Inspired from http://unix.stackexchange.com/questions/148/colorizing-your-terminal-and-shell-environment
-        env.ANSIBLE_FORCE_COLOR = env.ANSIBLE_FORCE_COLOR ?: 'true'
-        env.CLICOLOR = env.CLICOLOR ?: '1'
-        env.LSCOLORS = env.LSCOLORS ?: 'ExFxCxDxBxegedabagacad'
+      // some tools could fail if no TERM is defined
+      env.TERM =  env.TERM ?: 'xterm-color'
+      // Inspired from http://unix.stackexchange.com/questions/148/colorizing-your-terminal-and-shell-environment
+      env.ANSIBLE_FORCE_COLOR = env.ANSIBLE_FORCE_COLOR ?: 'true'
+      env.CLICOLOR = env.CLICOLOR ?: '1'
+      env.LSCOLORS = env.LSCOLORS ?: 'ExFxCxDxBxegedabagacad'
 
-        node('master') {
+      node('master') {
 
-            stage('prep') {
+            try {
 
-              // https://support.cloudbees.com/hc/en-us/articles/226122247-How-to-Customize-Checkout-for-Pipeline-Multibranch
-              // clean needed to avoid potential leftovers from a reused workspace
-              checkout([
-                $class: 'GitSCM',
-                branches: scm.branches,
-                extensions: scm.extensions + [[$class: 'CleanCheckout']],
-                userRemoteConfigs: scm.userRemoteConfigs
-                ])
+                stage('prep') {
 
-              git_branch = env.BRANCH_NAME ?: sh(returnStdout: true, script: 'git rev-parse --abbrev-ref HEAD').trim()
-              git_commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+                  // https://support.cloudbees.com/hc/en-us/articles/226122247-How-to-Customize-Checkout-for-Pipeline-Multibranch
+                  // clean needed to avoid potential leftovers from a reused workspace
+                  checkout([
+                    $class: 'GitSCM',
+                    branches: scm.branches,
+                    extensions: scm.extensions + [[$class: 'CleanCheckout']],
+                    userRemoteConfigs: scm.userRemoteConfigs
+                    ])
 
-              package_name = sh(returnStdout: true, script: 'python setup.py -q --name').trim()
-              package_version = sh(returnStdout: true, script: 'python setup.py -q --version').trim()
+                  git_branch = env.BRANCH_NAME ?: sh(returnStdout: true, script: 'git rev-parse --abbrev-ref HEAD').trim()
+                  git_commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
 
-              currentBuild.displayName = "${package_name}-${package_version}@${git_branch}"
+                  package_name = sh(returnStdout: true, script: 'python setup.py -q --name').trim()
+                  package_version = sh(returnStdout: true, script: 'python setup.py -q --version').trim()
 
-              sh """set
-              which python
-              """
+                  currentBuild.displayName = "${package_name}-${package_version}@${git_branch}"
 
-              venv '''
-              pip install -U pip wheel setuptools
-              pip freeze | tee pip-freeze.log
-              pip check || "echo WARNING: pip checked returned $? error."
-              which python
-              '''
-            }
+                  sh """set
+                  which python
+                  """
 
-            stage('lint') {
-            }
+                  venv '''
+                  pip install -U pip wheel setuptools
+                  pip freeze | tee pip-freeze.log
+                  pip check || "echo WARNING: pip checked returned $? error."
+                  which python
+                  '''
+                }
 
-            stage('unit') {
-              venv '''
-              pwd
-              ls -la
-              ./bin/sample.sh
-              pip install -e .
-              tox
-              '''
-            }
+                stage('lint') {
+                  }
 
-            stage('integration') {
-            }
+                stage('unit') {
+                  venv '''
+                  pwd
+                  ls -la
+                  ./bin/sample.sh
+                  pip install -e .
+                  tox
+                  '''
+                  }
 
-        }
+                stage('integration') {
+                  }
 
-    } // end-try
-    catch (error) {
-       stage "Cleanup after fail"
-       emailext attachLog: true, body: "Build failed (see ${env.BUILD_URL}): ${error}", subject: "[JENKINS] ${env.JOB_NAME} failed", to: 'someone@example.com'
-       throw error
-       }
-    finally {
-         stage('clean') {
+                } // end-try
+            catch (error) {
+               println error
+               emailext attachLog: true, body: "Build failed (see ${env.BUILD_URL}): ${error}", subject: "[JENKINS] ${env.JOB_NAME} failed", to: 'ssbarnea+spam@redhat.com'
+               throw error
+               }
+            finally {
+                 stage('clean') {
 
-           step $class: 'JUnitResultArchiver',
-                testResults: '**/TEST-*.xml **/nosetests.xml, **/tempest-results-*.xml **/*.log **/junit.xml'
-                
-           } // end-clean
-         }
+                   step $class: 'JUnitResultArchiver',
+                        testResults: '**/TEST-*.xml **/nosetests.xml, **/tempest-results-*.xml **/*.log **/junit.xml'
+
+                   } // end-clean
+                 } // finally
+
+    } // node
+
+
   } // end-ansiColor
 } // end-timestamper
