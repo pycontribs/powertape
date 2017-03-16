@@ -8,6 +8,9 @@ properties([
    ])
 ])
 
+// shedule job to run daily between 1am-2am
+properties([pipelineTriggers([cron('H 01 * * *')])])
+
 /*
    Runs a command inside a virtual environment, creates the virtualenv if it does not exist.
 
