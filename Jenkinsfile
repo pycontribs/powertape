@@ -60,6 +60,10 @@ timestamps {
 
                   git_commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
 
+                  /* First execution of setup.py can produce undesired stdout
+                  (like pbr print) and we don't want this on next commands which
+                  do read package name, version. */
+                  sh 'python setup.py --help-commands >/dev/null'
                   package_name = sh(returnStdout: true, script: 'python setup.py -q --name').trim()
                   package_version = sh(returnStdout: true, script: 'python setup.py -q --version').trim()
 
