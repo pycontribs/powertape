@@ -76,7 +76,7 @@ timestamps {
                   pwd
                   ls -la
                   ./bin/sample.sh
-                  pip install -e .
+                  pip install -e .[test]
                   tox
                   '''
                   }
