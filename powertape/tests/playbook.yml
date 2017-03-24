@@ -1,0 +1,11 @@
+#!/usr/bin/env ansible-playbook -vv
+- name: Sample Playbook
+  hosts: localhost
+  gather_facts: no
+  tags: dump_facts
+  any_errors_fatal: true
+  vars:
+    myvar: aaa
+  tasks:
+
+      - debug: msg={{myvar}}

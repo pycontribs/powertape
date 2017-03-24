@@ -70,6 +70,18 @@ timestamps {
 
         // some tools could fail if no TERM is defined
         env.TERM = env.TERM ?: 'xterm-color'
+
+        if (env.DEBUG) {
+          env.ANSIBLE_VERBOSITY = 2
+          env.ANSIBLE_ARGS = '-vv'
+          env.ANSIBLE_DEBUG = true
+        }
+        else {
+          env.ANSIBLE_VERBOSITY = 1
+          env.ANSIBLE_ARGS = '-v'
+          env.ANSIBLE_DEBUG = false
+        }
+
         // Inspired from http://unix.stackexchange.com/questions/148/colorizing-your-terminal-and-shell-environment
         env.ANSIBLE_FORCE_COLOR = env.ANSIBLE_FORCE_COLOR ?: 'true'
         env.CLICOLOR = env.CLICOLOR ?: '1'
@@ -117,6 +129,7 @@ timestamps {
                   pip freeze | tee pip-freeze.log
                   pip check || "echo WARNING: pip checked returned $? error."
                   which python
+                  ansible-playbook ${env.ANSIBLE_ARGS} -h localhost, powertape/tests/playbook.yml
                   '''
                 }
 
