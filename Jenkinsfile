@@ -19,10 +19,12 @@ properties([
         ]),
 
         // schedule job to run daily between 1am-2am
-        pipelineTriggers([cron('H 01 * * *')])
+        pipelineTriggers([
+                [$class: 'GitHubPushTrigger'],
+                pollSCM('H/5 * * * *'),
+                cron('H 01 * * *')
+        ])
 ])
-
-
 
 /*
    Runs a command inside a virtual environment, creates the virtualenv if it does not exist.
@@ -95,12 +97,16 @@ timestamps {
 
                     // https://support.cloudbees.com/hc/en-us/articles/226122247-How-to-Customize-Checkout-for-Pipeline-Multibranch
                     // clean needed to avoid potential leftovers from a reused workspace
-                    checkout([
-                            $class           : 'GitSCM',
-                            branches         : scm.branches,
-                            extensions       : scm.extensions + [[$class: 'CleanCheckout']],
-                            userRemoteConfigs: scm.userRemoteConfigs
-                    ])
+
+                    checkout scm
+
+
+                    //                    checkout([
+                    //                            $class           : 'GitSCM',
+                    //                            branches         : scm.branches,
+                    //                            extensions       : scm.extensions + [[$class: 'CleanCheckout']],
+                    //                            userRemoteConfigs: scm.userRemoteConfigs
+                    //                    ])
 
                     git_branch = env.BRANCH_NAME ?: sh(returnStdout: true, script: 'git rev-parse --abbrev-ref HEAD').trim()
                     if (git_branch.length() > 15 || git_branch.contains(' ')) {
@@ -114,23 +120,28 @@ timestamps {
                     /* First execution of setup.py can produce undesired stdout
                     (like pbr print) and we don't want this on next commands which
                     do read package name, version. */
-                    sh 'python setup.py --help-commands >/dev/null'
+                    sh '''
+                    set -ex
+                    which python
+                    which pip || easy_install pip
+                    pip install setuptools  
+                    python setup.py --help-commands >/dev/null
+                    set > audit-env.log
+                    pip freeze --all > audit-pip.log
+                    pip check
+                    '''
                     package_name = sh(returnStdout: true, script: 'python setup.py -q --name').trim()
                     package_version = sh(returnStdout: true, script: 'python setup.py -q --version').trim()
 
                     currentBuild.displayName = "${package_name}-${package_version}@${git_branch}"
 
-                    sh """set
-                  which python
-                  """
-
                     venv '''
-                  pip install -U pip wheel setuptools
-                  pip freeze | tee pip-freeze.log
-                  pip check || "echo WARNING: pip checked returned $? error."
-                  which python
-                  ansible-playbook ${env.ANSIBLE_ARGS} -h localhost, powertape/tests/playbook.yml
-                  '''
+                    pip install -U pip wheel setuptools
+                    pip freeze | tee pip-freeze.log
+                    pip check || "echo WARNING: pip checked returned $? error."
+                    which python
+                    ansible-playbook ${env.ANSIBLE_ARGS} -h localhost, powertape/tests/playbook.yml
+'''
                 }
 
                 stage('lint') {

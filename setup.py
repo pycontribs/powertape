@@ -1,4 +1,5 @@
-import setuptools
+#!/usr/bin/env python
+from setuptools import setup
 
 # In python < 2.7.4, a lazy loading of package `pbr` will break
 # setuptools if some other modules registered functions in `atexit`.
@@ -8,6 +9,6 @@ try:
 except ImportError:
     pass
 
-setuptools.setup(
+setup(
     setup_requires=['pbr>=2.0', 'setuptools>=17.1'],
     pbr=True)
