@@ -76,10 +76,13 @@ timestamps {
                     if (result != 200) currentBuild.result = 'FAILURE'
 
                     // should generate sh-1.log
-                    sh2 "bash bin/ansitest"
+                    sh2 "./bin/ansitest"
 
-                    // should generate sh.log.gz
+                    // should generate sh-2.log.gz
                     sh2 script: "seq 1000", compress: true
+
+                    // should generate sh-3.log
+                    sh2 "./bin/progresstest"
 
                     // this should not generate a log file or limit the output due
                     // to returnStdout: true
