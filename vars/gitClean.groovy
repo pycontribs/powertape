@@ -16,13 +16,13 @@ String call() {
             // in the root and then using submodule foreach
             // is based on how the Jenkins Git SCM clean before checkout
             // feature works.
-            bat 'git reset --hard'
+            sh 'git reset --hard'
             // Note: -e is necessary to exclude the temp directory
             // .jenkins-XXXXX in the workspace where Pipeline puts the
             // batch file for the 'bat' command.
-            bat 'git clean -ffdx -e ".jenkins-*/"'
-            bat 'git submodule foreach --recursive git reset --hard'
-            bat 'git submodule foreach --recursive git clean -ffdx'
+            sh 'git clean -ffdx -e ".jenkins-*/"'
+            sh 'git submodule foreach --recursive git reset --hard'
+            sh 'git submodule foreach --recursive git clean -ffdx'
         }
         else
         {

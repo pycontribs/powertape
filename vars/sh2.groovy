@@ -40,45 +40,62 @@ def call(Map cmd) {
     cmd['timestamps'] = cmd['timestamps'] ?: false
     cmd['ansiColor'] = cmd['ansiColor'] ?: true
     cmd['returnStdout'] = cmd['returnStdout'] ?: false
+    cmd['compress'] = cmd['compress'] ?: false
+
+
     def LOG_FILENAME = false
+    def LOG_FILENAME_SUFFIX = ".log"
+    def STRIP_ANSI = "sed 's/\\x1b\\[[0-9;]*m//g'"
+    def filters = [STRIP_ANSI]
+    def verbosity = ''
+
+    if (env.DEBUG && env.DEBUG != 'false')
+       verbosity = 'x'
+
+    if (cmd['compress']) {
+      filters.add("gzip -9 --stdout")
+      LOG_FILENAME_SUFFIX = ".log.gz"
+    }
+
     if (! cmd['returnStdout']) {
 
       // get log filename
-      LOG_FILENAME = sh returnStdout: true, script: '''#!/bin/bash
-      set -eo pipefail
+      LOG_FILENAME = sh returnStdout: true, script: """#!/bin/bash
+      set -eo$verbosity pipefail
 
       function next_logfile() {
         n=
         set -C
         until
-          file=$1${n:+-$n}.log.gz
-          [[ ! -f "$file" ]]
+          file=\$1\${n:+-\$n}
+          [[ ! \$(find \$file*) ]]
         do
           ((n++))
         done
-        printf "$file"
-
+        printf \$file$LOG_FILENAME_SUFFIX
       }
 
       # Sanitize filename https://stackoverflow.com/a/44811468/99834
-      LOG_PREFIX=$(echo "${STAGE_NAME:-output}" | \
+      printf \$(next_logfile \$(echo "\${STAGE_NAME:-sh}" | \
                    awk -F '[^[:alnum:]]+' -v OFS=- \
-                   '{$0=tolower($0); $1=$1; gsub(/^-|-$/, "")} 1')
+                   '{\$0=tolower(\$0); \$1=\$1; gsub(/^-|-\$/, "")} 1'))
+      """
 
-      printf "$(next_logfile $LOG_PREFIX)"
-      '''
+      if (verbosity) {
+          echo "LOG_FILENAME=$LOG_FILENAME"
+      }
 
-      cmd['script'] = '''#!/bin/bash
-      # wrapper for limiting stdout output from commands
-      set -eo pipefail
+      // wrapper for limiting console output from commands
+      cmd['script'] = """#!/bin/bash
+      set -eo$verbosity pipefail
 
-      ( ''' + cmd['script'] + ''' ) 2>&1 | \
-          tee >(gzip -9 --stdout >> ''' + LOG_FILENAME + ''') | \
-          stdbuf -i0 -o0 -e0 awk -v offset=${MAX_LINES:-200} \
+      ( ${ cmd['script'] } ) 2>&1 | \
+          tee >(${ filters.join('|') } >> $LOG_FILENAME) | \
+          stdbuf -i0 -o0 -e0 awk -v offset=\${MAX_LINES:-200} \
           '{
                if (NR <= offset) print;
                else {
-                   a[NR] = $0;
+                   a[NR] = \$0;
                    delete a[NR-offset];
                    printf "." > "/dev/stderr"
                    }
@@ -88,7 +105,11 @@ def call(Map cmd) {
              for(i=NR-offset+1 > offset ? NR-offset+1: offset+1 ;i<=NR;i++)
              { print a[i]}
            }'
-      '''
+      """
+    }
+
+    if (env.DEBUG ?: true) {
+        echo cmd['script']
     }
 
     def error = false
