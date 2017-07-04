@@ -48,7 +48,7 @@ def call(Map cmd) {
     // number of seconds before adding a new progress line
     cmd['progressSeconds'] = cmd['progressSeconds'] ?: 30
 
-    def LOG_FILENAME = false
+    def LOG_FILENAME_ABS = false
     def LOG_FILENAME_SUFFIX = ".log"
     def STRIP_ANSI = "sed 's/\\x1b\\[[0-9;]*m//g'"
     def filters = [STRIP_ANSI]
@@ -65,19 +65,20 @@ def call(Map cmd) {
     if (! cmd['returnStdout']) {
 
       // get log filename
-      LOG_FILENAME = sh returnStdout: true, script: """#!/bin/bash
+      LOG_FILENAME_ABS = sh returnStdout: true, script: """#!/bin/bash
       set -eo$verbosity pipefail
 
+      mkdir -p \$WORKSPACE/.sh >/dev/null
       function next_logfile() {
         n=
         set -C
         until
           file=\$1\${n:+-\$n}
-          [[ ! \$(find \$file* 2>/dev/null) ]]
+          [[ ! \$(find \$WORKSPACE/.sh/\$file* 2>/dev/null) ]]
         do
           ((n++))
         done
-        printf \$file$LOG_FILENAME_SUFFIX
+        printf \$WORKSPACE/.sh/\$file$LOG_FILENAME_SUFFIX
       }
 
       # Sanitize filename https://stackoverflow.com/a/44811468/99834
@@ -85,6 +86,9 @@ def call(Map cmd) {
                    awk -F '[^[:alnum:]]+' -v OFS=- \
                    '{\$0=tolower(\$0); \$1=\$1; gsub(/^-|-\$/, "")} 1'))
       """
+      LOG_FILENAME = LOG_FILENAME_ABS.substring(
+                     LOG_FILENAME_ABS.lastIndexOf(File.separator)+1,
+                                                  LOG_FILENAME_ABS.length())
 
       // wrapper for limiting console output from commands
       cmd['script'] = """#!/bin/bash
@@ -93,7 +97,7 @@ def call(Map cmd) {
       which gawk >/dev/null && AWK=gawk || AWK=awk
 
       ( ${ cmd['script'] } ) 2>&1 | \
-          tee >(${ filters.join('|') } >> $LOG_FILENAME) | \
+          tee >(${ filters.join('|') } >> $LOG_FILENAME_ABS) | \
           \$AWK -v offset=\${MAX_LINES:-200} \
           '{
                if (NR <= offset) print;
@@ -114,7 +118,8 @@ def call(Map cmd) {
       """
      // we save the script to the log file, so we can know what commands
      // were executed.
-     writeFile file: LOG_FILENAME, text: cmd['script'] + '\n# OUTPUT:\n'
+     writeFile file: LOG_FILENAME_ABS,
+               text: cmd['script'] + '\n# CWD: ' + pwd() + '\n# OUTPUT:\n'
     }
 
     if (verbosity) {
@@ -148,8 +153,8 @@ def call(Map cmd) {
       error = e
     } finally {
         if (LOG_FILENAME) {
-            archiveArtifacts artifacts: LOG_FILENAME, allowEmpty: true
-            echo "[sh2] \uD83D\uDD0E unabridged log at ${BUILD_URL}artifact/${LOG_FILENAME}"
+            archiveArtifacts artifacts: ".sh/${LOG_FILENAME}", allowEmpty: true
+            echo "[sh2] \uD83D\uDD0E unabridged log at ${BUILD_URL}artifact/.sh/${LOG_FILENAME}"
         }
         if (error) throw error
     }
