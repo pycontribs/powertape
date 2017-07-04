@@ -79,10 +79,14 @@ timestamps {
                     sh2 "./bin/ansitest"
 
                     // should generate sh-2.log.gz
-                    sh2 script: "seq 1000", compress: true
-
-                    // should generate sh-3.log
-                    sh2 "./bin/progresstest"
+                    sh2 script: """#!/bin/bash
+                        for i in \$(seq 100)
+                        do
+                          printf "\$i\n"
+                          sleep 1
+                        done""",
+                        compress: true,
+                        progressSeconds: 10
 
                     // this should not generate a log file or limit the output due
                     // to returnStdout: true

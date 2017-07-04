@@ -5,12 +5,16 @@
   - limits console output, showing only head+tail of up to env.MAX_LINES or 200
   - unabridged console output is saved in numbered files
   - env.STAGE_NAME is used as for log filename base when defined, or it
-    fallbacks to 'output'. This var will become soon available in Jenkins,
+    fallbacks to 'sh'. STAGE_NAME will become available in Jenkins core soon,
     the PR was already merged.
-  - timestamps: false - auto add wrapper if not manually set to false
-  - ansiColor: true - auto add wrapper if not manually set to false
+  - timestamps: false - add timestamps wrapper
+  - ansiColor: true - enables ansicoloring wrapper
   - returnStdout : false - when true it will fallback to original sh().
     This is for avoiding the risk of breaking pipes that do process stdout.
+  - compress: false - if true, it will create and archive .log.gz
+    instead of .log files
+  - progressSeconds: 30 - number of seconds to wait before adding a new
+    progress line.
 
   Degrades gracedully: Unless you use the newly added parameters your
   pipeline code would work even when the new sh() is not loaded.
@@ -41,7 +45,8 @@ def call(Map cmd) {
     cmd['ansiColor'] = cmd['ansiColor'] ?: true
     cmd['returnStdout'] = cmd['returnStdout'] ?: false
     cmd['compress'] = cmd['compress'] ?: false
-
+    // number of seconds before adding a new progress line
+    cmd['progressSeconds'] = cmd['progressSeconds'] ?: 30
 
     def LOG_FILENAME = false
     def LOG_FILENAME_SUFFIX = ".log"
@@ -68,7 +73,7 @@ def call(Map cmd) {
         set -C
         until
           file=\$1\${n:+-\$n}
-          [[ ! \$(find \$file*) ]]
+          [[ ! \$(find \$file* 2>/dev/null) ]]
         do
           ((n++))
         done
@@ -81,34 +86,38 @@ def call(Map cmd) {
                    '{\$0=tolower(\$0); \$1=\$1; gsub(/^-|-\$/, "")} 1'))
       """
 
-      if (verbosity) {
-          echo "LOG_FILENAME=$LOG_FILENAME"
-      }
-
       // wrapper for limiting console output from commands
       cmd['script'] = """#!/bin/bash
       set -eo$verbosity pipefail
+      # MacOS awk does not have systime() extension
+      which gawk >/dev/null && AWK=gawk || AWK=awk
 
       ( ${ cmd['script'] } ) 2>&1 | \
           tee >(${ filters.join('|') } >> $LOG_FILENAME) | \
-          stdbuf -i0 -o0 -e0 awk -v offset=\${MAX_LINES:-200} \
+          \$AWK -v offset=\${MAX_LINES:-200} \
           '{
                if (NR <= offset) print;
                else {
                    a[NR] = \$0;
                    delete a[NR-offset];
-                   printf "." > "/dev/stderr"
+                   currTime = systime()
+                   if ( (currTime - prevTime) > ${ cmd['progressSeconds'] } ) {
+                       printf "INFO: %s lines redirected to $LOG_FILENAME ...\\n", NR | "cat>&2"
+                       prevTime = currTime
+                   }
                    }
            }
            END {
-             print "" > "/dev/stderr";
              for(i=NR-offset+1 > offset ? NR-offset+1: offset+1 ;i<=NR;i++)
              { print a[i]}
            }'
       """
+     // we save the script to the log file, so we can know what commands
+     // were executed.
+     writeFile file: LOG_FILENAME, text: cmd['script'] + '\n# OUTPUT:\n'
     }
 
-    if (env.DEBUG ?: true) {
+    if (verbosity) {
         echo cmd['script']
     }
 
