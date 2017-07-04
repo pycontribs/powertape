@@ -53,6 +53,7 @@ def call(Map cmd) {
     def STRIP_ANSI = "sed 's/\\x1b\\[[0-9;]*m//g'"
     def filters = [STRIP_ANSI]
     def verbosity = ''
+    def result = null
 
     if (env.DEBUG && env.DEBUG != 'false')
        verbosity = 'x'
@@ -118,8 +119,10 @@ def call(Map cmd) {
       """
      // we save the script to the log file, so we can know what commands
      // were executed.
-     writeFile file: LOG_FILENAME_ABS,
-               text: cmd['script'] + '\n# CWD: ' + pwd() + '\n# OUTPUT:\n'
+     if (! cmd['compress']) {
+         writeFile file: LOG_FILENAME_ABS,
+                   text: cmd['script'] + '\n# CWD: ' + pwd() + '\n# OUTPUT:\n'
+         } // TODO: implement the same for compressed logs
     }
 
     if (verbosity) {
