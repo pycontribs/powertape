@@ -1,0 +1,7 @@
+[filter "*"]
+    reviewer = ssbarnea
+
+[filter "branch:master"]
+    reviewer = rhos-ci
+
+# see https://gerrit.googlesource.com/plugins/reviewers/+doc/master/src/main/resources/Documentation/config.md
