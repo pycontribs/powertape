@@ -79,11 +79,16 @@ timestamps {
                     if (result != 200) currentBuild.result = 'FAILURE'
 
                     dir("bin") {
-                      // should generate and archibe $WORKSPACE/.sh/ansitest.log
+                      // should generate and archive $WORKSPACE/.sh/ansitest.log
                       // even if the current directory is $WORKSKAPCE/bin
-                      env.STAGE_NAME = 'ansitest'
-                      sh2 "./ansitest"
+                      withEnv(['STAGE_NAME=ansitest']) {
+                          sh2 "./ansitest"
+                          }
                     }
+
+                    // should create "date.log"
+                    sh2 script: 'date -u +"%Y-%m-%dT%H:%M:%SZ"',
+                        basename: "date"
 
                     // should generate sh-1.log.gz
                     sh2 script: """#!/bin/bash

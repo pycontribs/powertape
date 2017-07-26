@@ -4,9 +4,8 @@
   sh2() is enhanced version of sh() which:
   - limits console output, showing only head+tail of up to env.MAX_LINES or 200
   - unabridged console output is saved in numbered files
-  - env.STAGE_NAME is used as for log filename base when defined, or it
-    fallbacks to 'sh'. STAGE_NAME will become available in Jenkins core soon,
-    the PR was already merged.
+  - basename: false - log filename when valid string else
+    env.STAGE_NAME is used if defined. Fallback to 'sh'.
   - timestamps: false - add timestamps wrapper
   - ansiColor: true - enables ansicoloring wrapper
   - returnStdout : false - when true it will fallback to original sh().
@@ -47,16 +46,20 @@ def call(Map cmd) {
     cmd['compress'] = cmd['compress'] ?: false
     // number of seconds before adding a new progress line
     cmd['progressSeconds'] = cmd['progressSeconds'] ?: 30
+    cmd['basename'] = cmd['basename'] ?: false
 
     def LOG_FILENAME_ABS = false
     def LOG_FILENAME_SUFFIX = ".log"
     def STRIP_ANSI = "sed 's/\\x1b\\[[0-9;]*m//g'"
+    def LOG_FOLDER = '.sh'
     def filters = [STRIP_ANSI]
     def verbosity = ''
     def result = null
 
     if (env.DEBUG && env.DEBUG != 'false')
        verbosity = 'x'
+
+    if (env.DEBUG && env.DEBUG != 'false')
 
     if (cmd['compress']) {
       filters.add("gzip -9 --stdout")
@@ -65,32 +68,36 @@ def call(Map cmd) {
 
     if (! cmd['returnStdout']) {
 
-      // get log filename
-      LOG_FILENAME_ABS = sh returnStdout: true, script: """#!/bin/bash
-      set -eo$verbosity pipefail
+      if (cmd['basename']) {
+          // when prefix is specifed we do not determine log filename
+          LOG_FILENAME_ABS = env.WORKSPACE + "/$LOG_FOLDER/" + cmd['basename'] + LOG_FILENAME_SUFFIX
+      } else {
+          // getermine log filename, using auto-incrementing
+          LOG_FILENAME_ABS = sh returnStdout: true, script: """#!/bin/bash
+          set -eo$verbosity pipefail
 
-      mkdir -p \$WORKSPACE/.sh >/dev/null
-      function next_logfile() {
-        n=
-        set -C
-        until
-          file=\$1\${n:+-\$n}
-          [[ ! \$(find \$WORKSPACE/.sh/\$file* 2>/dev/null) ]]
-        do
-          ((n++))
-        done
-        printf \$WORKSPACE/.sh/\$file$LOG_FILENAME_SUFFIX
-      }
+          mkdir -p \$WORKSPACE/.sh >/dev/null
+          function next_logfile() {
+            n=
+            set -C
+            until
+              file=\$1\${n:+-\$n}
+              [[ ! \$(find \$WORKSPACE/.sh/\$file* 2>/dev/null) ]]
+            do
+              ((n++))
+            done
+            printf \$WORKSPACE/.sh/\$file$LOG_FILENAME_SUFFIX
+          }
 
-      # Sanitize filename https://stackoverflow.com/a/44811468/99834
-      printf \$(next_logfile \$(echo "\${STAGE_NAME:-sh}" | \
-                   awk -F '[^[:alnum:]]+' -v OFS=- \
-                   '{\$0=tolower(\$0); \$1=\$1; gsub(/^-|-\$/, "")} 1'))
-      """
+          # Sanitize filename https://stackoverflow.com/a/44811468/99834
+          printf \$(next_logfile \$(echo "\${STAGE_NAME:-sh}" | \
+                       awk -F '[^[:alnum:]]+' -v OFS=- \
+                       '{\$0=tolower(\$0); \$1=\$1; gsub(/^-|-\$/, "")} 1'))
+          """
+          }
       LOG_FILENAME = LOG_FILENAME_ABS.substring(
                      LOG_FILENAME_ABS.lastIndexOf(File.separator)+1,
                                                   LOG_FILENAME_ABS.length())
-
       // wrapper for limiting console output from commands
       cmd['script'] = """#!/bin/bash
       set -eo$verbosity pipefail
@@ -156,7 +163,7 @@ def call(Map cmd) {
       error = e
     } finally {
         if (LOG_FILENAME) {
-            archiveArtifacts artifacts: "/.sh/${LOG_FILENAME}", allowEmptyArchive: true
+            archiveArtifacts artifacts: "/.sh/${LOG_FILENAME}" //, allowEmptyArchive: true
             echo "[sh2] \uD83D\uDD0E unabridged log at ${BUILD_URL}artifact/.sh/${LOG_FILENAME}"
         }
         if (error) throw error
