@@ -156,7 +156,7 @@ def call(Map cmd) {
       error = e
     } finally {
         if (LOG_FILENAME) {
-            archiveArtifacts artifacts: ".sh/${LOG_FILENAME}", allowEmpty: true
+            archiveArtifacts artifacts: ".sh/${LOG_FILENAME}", allowEmptyArchive: true
             echo "[sh2] \uD83D\uDD0E unabridged log at ${BUILD_URL}artifact/.sh/${LOG_FILENAME}"
         }
         if (error) throw error
