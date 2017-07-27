@@ -75,9 +75,12 @@ timestamps {
                 withEnv(["MAX_LINES=2"]) {
                     // should display 1,2,4,5 (missing 3) and sh.log
                     echo "[sh2] 001"
-                    def result = sh2 script: "seq 5; exit 200", returnStatus: true
-                    print "[${result}]"
-                    if (result != 200) currentBuild.result = 'FAILURE'
+                    def result = sh2 script: "pwd; seq 5; exit 0", returnStatus: true
+
+                    if (result != 0) {
+                        println "ERROR: Got [${result}] status code instead of expected [0]"
+                        currentBuild.result = 'FAILURE'
+                    }
 
                     echo "[sh2] 002"
                     dir("bin") {
@@ -99,10 +102,10 @@ timestamps {
                         for i in \$(seq 100)
                         do
                           printf "\$i\n"
-                          sleep 1
+                          sleep 0.5
                         done""",
                         compress: true,
-                        progressSeconds: 10
+                        progressSeconds: 5
 
                     echo "[sh2] 005"
                     // this should not generate a log file or limit the output due
@@ -118,7 +121,6 @@ timestamps {
                 }
             }
             // end-of-unittests
-
         } // end-try
         catch (error) {
             println "Exception ${error.getClass()} received: ${error}"
@@ -137,16 +139,13 @@ timestamps {
         finally {
             stage('archive') {
 
-                archiveArtifacts artifacts: '**/*.log,**/*.log.gz,.envrc',
+                archiveArtifacts artifacts: '.envrc',
                                  fingerprint: false,
                                  allowEmptyArchive: true
                 // defaultExcludes: true
                 // caseSensitive: false
                 // onlyIfSuccessful: false
-
             } // end-clean
         } // finally
-
     } // node
-
 } // timestamps

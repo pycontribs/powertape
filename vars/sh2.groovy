@@ -48,7 +48,7 @@ def call(Map cmd) {
     cmd['progressSeconds'] = cmd['progressSeconds'] ?: 30
     cmd['basename'] = cmd['basename'] ?: false
 
-    def LOG_FILENAME_ABS = false
+    def LOG_FILEPATH = false // relative to $WORKSPACE
     def LOG_FILENAME_SUFFIX = ".log"
     def STRIP_ANSI = "sed 's/\\x1b\\[[0-9;]*m//g'"
     def LOG_FOLDER = '.sh'
@@ -60,19 +60,18 @@ def call(Map cmd) {
       filters.add("gzip -9 --stdout")
       LOG_FILENAME_SUFFIX = ".log.gz"
     }
-
-    if (env.DEBUG && env.DEBUG != 'false')
-       verbosity = 'x'
-       echo "DEBUG: [sh2] params: ${cmd}"
+    if (env.DEBUG && env.DEBUG != 'false') {
+      verbosity = 'x' // for use in bash set -x
+    }
 
     if (! cmd['returnStdout']) {
 
       if (cmd['basename']) {
           // when prefix is specifed we do not determine log filename
-          LOG_FILENAME_ABS = env.WORKSPACE + "/$LOG_FOLDER/" + cmd['basename'] + LOG_FILENAME_SUFFIX
+          LOG_FILEPATH = LOG_FOLDER + '/' + cmd['basename'] + LOG_FILENAME_SUFFIX
       } else {
           // getermine log filename, using auto-incrementing
-          LOG_FILENAME_ABS = sh returnStdout: true, script: """#!/bin/bash
+          LOG_FILEPATH = sh returnStdout: true, script: """#!/bin/bash
           set -eo$verbosity pipefail
 
           mkdir -p \$WORKSPACE/$LOG_FOLDER >/dev/null
@@ -85,7 +84,7 @@ def call(Map cmd) {
             do
               ((n++))
             done
-            printf \$WORKSPACE/$LOG_FOLDER/\$file$LOG_FILENAME_SUFFIX
+            printf $LOG_FOLDER/\$file$LOG_FILENAME_SUFFIX
           }
 
           # Sanitize filename https://stackoverflow.com/a/44811468/99834
@@ -94,9 +93,9 @@ def call(Map cmd) {
                        '{\$0=tolower(\$0); \$1=\$1; gsub(/^-|-\$/, "")} 1'))
           """
           }
-      LOG_FILENAME = LOG_FILENAME_ABS.substring(
-                     LOG_FILENAME_ABS.lastIndexOf(File.separator)+1,
-                                                  LOG_FILENAME_ABS.length())
+      LOG_FILENAME = LOG_FILEPATH.substring(
+                     LOG_FILEPATH.lastIndexOf(File.separator)+1,
+                                                  LOG_FILEPATH.length())
       // wrapper for limiting console output from commands
       cmd['script'] = """#!/bin/bash
       set -eo$verbosity pipefail
@@ -104,7 +103,7 @@ def call(Map cmd) {
       which gawk >/dev/null && AWK=gawk || AWK=awk
 
       ( ${ cmd['script'] } ) 2>&1 | \
-          tee >(${ filters.join('|') } >> $LOG_FILENAME_ABS) | \
+          tee >(${ filters.join('|') } >> $LOG_FILEPATH) | \
           \$AWK -v offset=\${MAX_LINES:-200} \
           '{
                if (NR <= offset) print;
@@ -126,13 +125,13 @@ def call(Map cmd) {
      // we save the script to the log file, so we can know what commands
      // were executed.
      if (! cmd['compress']) {
-         writeFile file: LOG_FILENAME_ABS,
+         writeFile file: LOG_FILEPATH,
                    text: cmd['script'] + '\n# CWD: ' + pwd() + '\n# OUTPUT:\n'
          } // TODO: implement the same for compressed logs
-    }
+    } // end of if !returnStdout
 
     if (verbosity) {
-        echo cmd['script']
+       echo "DEBUG: [sh2] params: ${cmd}"
     }
 
     def error = false
@@ -159,10 +158,11 @@ def call(Map cmd) {
             }
         }
     } catch (e) {
+      echo "ERROR: [sh2] {e}"
       error = e
     } finally {
-        if (LOG_FILENAME_ABS) {
-            archiveArtifacts artifacts: LOG_FILENAME_ABS
+        if (! cmd['returnStdout'] && LOG_FILEPATH) {
+            archiveArtifacts artifacts: LOG_FILEPATH // accepts only relative paths
             echo "[sh2] \uD83D\uDD0E unabridged log at ${BUILD_URL}artifact/${LOG_FOLDER}/${LOG_FILENAME}"
         }
         if (error) throw error
