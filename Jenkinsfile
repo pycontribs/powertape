@@ -12,7 +12,7 @@ properties([
         parameters([
                 booleanParam(
                   name: 'DEBUG',
-                  defaultValue: false,
+                  defaultValue: true,
                   description: 'Enables debug mode which increase verbosity level.'),
                 string(
                   name: 'GERRIT_REFSPEC',
@@ -74,10 +74,12 @@ timestamps {
             stage("sh2") {
                 withEnv(["MAX_LINES=2"]) {
                     // should display 1,2,4,5 (missing 3) and sh.log
+                    echo "[sh2] 001"
                     def result = sh2 script: "seq 5; exit 200", returnStatus: true
                     print "[${result}]"
                     if (result != 200) currentBuild.result = 'FAILURE'
 
+                    echo "[sh2] 002"
                     dir("bin") {
                       // should generate and archive $WORKSPACE/.sh/ansitest.log
                       // even if the current directory is $WORKSKAPCE/bin
@@ -86,10 +88,12 @@ timestamps {
                           }
                     }
 
+                    echo "[sh2] 003"
                     // should create "date.log"
                     sh2 script: 'date -u +"%Y-%m-%dT%H:%M:%SZ"',
                         basename: "date"
 
+                    echo "[sh2] 004"
                     // should generate sh-1.log.gz
                     sh2 script: """#!/bin/bash
                         for i in \$(seq 100)
@@ -100,29 +104,34 @@ timestamps {
                         compress: true,
                         progressSeconds: 10
 
+                    echo "[sh2] 005"
                     // this should not generate a log file or limit the output due
                     // to returnStdout: true
                     result = sh2 script: "seq 5", returnStdout: true
-                    print "[${result}]"
+                    println "result = [${result}]"
                     // normalize output
                     result = result.replaceAll('\\r\\n?', '\n').trim()
-                    if (result != '1\n2\n3\n4\n5') currentBuild.result = 'FAILURE'
+                    if (result != '1\n2\n3\n4\n5') {
+                        println "FAILURE: Unexpected result: [$result]"
+                        currentBuild.result = 'FAILURE'
+                    }
                 }
             }
             // end-of-unittests
 
         } // end-try
         catch (error) {
-            println error
+            println "Exception ${error.getClass()} received: ${error}"
+
             emailext attachLog: true,
                     body: "Build failed (see ${env.BUILD_URL}): ${error}",
                     subject: "[JENKINS] ${env.JOB_NAME} failed",
-                    to: env.CHANGE_AUTHOR_EMAIL ?: 'ssbarnea+spam@redhat.com'
-            // compressLog: false
-            // recipientProviders
-            // replyTo
-            CulpritsRecipientProvider
-            DevelopersRecipientProvider
+                    recipientProviders: [
+                      [$class: 'DevelopersRecipientProvider'],
+                      [$class: 'CulpritsRecipientProvider']]
+                    //to: RECIPIENTS
+                    // compressLog: false
+                    // replyTo
             throw error
         }
         finally {

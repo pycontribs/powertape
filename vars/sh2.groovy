@@ -56,15 +56,14 @@ def call(Map cmd) {
     def verbosity = ''
     def result = null
 
-    if (env.DEBUG && env.DEBUG != 'false')
-       verbosity = 'x'
-
-    if (env.DEBUG && env.DEBUG != 'false')
-
     if (cmd['compress']) {
       filters.add("gzip -9 --stdout")
       LOG_FILENAME_SUFFIX = ".log.gz"
     }
+
+    if (env.DEBUG && env.DEBUG != 'false')
+       verbosity = 'x'
+       echo "DEBUG: [sh2] params: ${cmd}"
 
     if (! cmd['returnStdout']) {
 
@@ -76,17 +75,17 @@ def call(Map cmd) {
           LOG_FILENAME_ABS = sh returnStdout: true, script: """#!/bin/bash
           set -eo$verbosity pipefail
 
-          mkdir -p \$WORKSPACE/.sh >/dev/null
+          mkdir -p \$WORKSPACE/$LOG_FOLDER >/dev/null
           function next_logfile() {
             n=
             set -C
             until
               file=\$1\${n:+-\$n}
-              [[ ! \$(find \$WORKSPACE/.sh/\$file* 2>/dev/null) ]]
+              [[ ! \$(find \$WORKSPACE/$LOG_FOLDER/\$file* 2>/dev/null) ]]
             do
               ((n++))
             done
-            printf \$WORKSPACE/.sh/\$file$LOG_FILENAME_SUFFIX
+            printf \$WORKSPACE/$LOG_FOLDER/\$file$LOG_FILENAME_SUFFIX
           }
 
           # Sanitize filename https://stackoverflow.com/a/44811468/99834
@@ -162,9 +161,9 @@ def call(Map cmd) {
     } catch (e) {
       error = e
     } finally {
-        if (LOG_FILENAME) {
-            archiveArtifacts artifacts: "/.sh/${LOG_FILENAME}" //, allowEmptyArchive: true
-            echo "[sh2] \uD83D\uDD0E unabridged log at ${BUILD_URL}artifact/.sh/${LOG_FILENAME}"
+        if (LOG_FILENAME_ABS) {
+            archiveArtifacts artifacts: LOG_FILENAME_ABS
+            echo "[sh2] \uD83D\uDD0E unabridged log at ${BUILD_URL}artifact/${LOG_FOLDER}/${LOG_FILENAME}"
         }
         if (error) throw error
     }
