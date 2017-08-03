@@ -27,7 +27,7 @@ properties([
 
         // schedule job to run daily between 1am-2am
         pipelineTriggers([
-                [$class: 'GitHubPushTrigger'],
+                // [$class: 'GitHubPushTrigger'], // enable only if plugin is installed
                 pollSCM('H/5 * * * *'),
                 cron('H 01 * * *')
         ])

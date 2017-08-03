@@ -101,9 +101,10 @@ def call(Map cmd) {
       set -eo$verbosity pipefail
       # MacOS awk does not have systime() extension
       which gawk >/dev/null && AWK=gawk || AWK=awk
+      mkdir -p \$WORKSPACE/$LOG_FOLDER >/dev/null
 
       ( ${ cmd['script'] } ) 2>&1 | \
-          tee >(${ filters.join('|') } >> $LOG_FILEPATH) | \
+          tee >(${ filters.join('|') } >> \$WORKSPACE/$LOG_FILEPATH) | \
           \$AWK -v offset=\${MAX_LINES:-200} \
           '{
                if (NR <= offset) print;
@@ -158,7 +159,7 @@ def call(Map cmd) {
             }
         }
     } catch (e) {
-      echo "ERROR: [sh2] {e}"
+      echo "ERROR: [sh2] ${e}"
       error = e
     } finally {
         if (! cmd['returnStdout'] && LOG_FILEPATH) {
