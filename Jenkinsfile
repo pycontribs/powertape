@@ -83,11 +83,13 @@ timestamps {
                     }
 
                     echo "[sh2] 002"
-                    dir("bin") {
+                    sh "mkdir -p foo"
+                    dir("foo") {
                       // should generate and archive $WORKSPACE/.sh/ansitest.log
-                      // even if the current directory is $WORKSKAPCE/bin
-                      withEnv(['STAGE_NAME=ansitest']) {
-                          sh2 "./ansitest"
+                      // even if the current directory is $WORKSKAPCE/foo
+                      withEnv(['STAGE_NAME=foo']) {
+                          sh2 "echo 'foo!'; seq 10"
+                          sh2 script: "echo 'foo2!'; seq 10", compress: true
                           }
                     }
 

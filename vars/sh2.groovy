@@ -141,21 +141,21 @@ def call(Map cmd) {
             timestamps {
                 if (cmd['ansiColor']) {
                   ansiColor('xterm') {
-                      result = sh cmd
+                      result = sh(cmd)
                   }
                 }
                 else {
-                   result = sh cmd
+                   result = sh(cmd)
                 }
             }
         } else {
             if (cmd['ansiColor']) {
               ansiColor('xterm') {
-                  result = sh cmd
+                  result = sh(cmd)
               }
             }
             else {
-               result = sh cmd
+               result = sh(cmd)
             }
         }
     } catch (e) {
@@ -166,11 +166,15 @@ def call(Map cmd) {
             archiveArtifacts artifacts: LOG_FILEPATH // accepts only relative paths
             echo "[sh2] \uD83D\uDD0E unabridged log at ${BUILD_URL}artifact/${LOG_FOLDER}/${LOG_FILENAME}"
         }
-        if (error) throw error
+        if (error) {
+          echo "ERROR: [sh2] finally: ${error}"
+          throw error
+        }
     }
+    echo "DEBUG: [sh2] returning ${result}"
     return result
 }
 
 def call(String cmd) {
-    sh2 'script': cmd
+    return sh2('script': cmd)
 }
