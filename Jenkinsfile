@@ -120,6 +120,13 @@ timestamps {
                         println "FAILURE: Unexpected result: [$result]"
                         currentBuild.result = 'FAILURE'
                     }
+
+                    echo "[sh2] 006"
+                    sh2 basename: "sh-006", script: 'date -u +"%Y-%m-%dT%H:%M:%SZ"'
+
+                    echo "[sh2] 007"
+                    sh2 basename: "sh-007", 'date -u +"%Y-%m-%dT%H:%M:%SZ"'
+
                 }
             }
             // end-of-unittests

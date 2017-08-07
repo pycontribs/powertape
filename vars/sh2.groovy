@@ -40,6 +40,10 @@ def call(Map cmd) {
     - progresbar goes to stderr, not stdout
 
     */
+    if (! cmd.containsKey('script')) {
+      error("Fatal: sh2 called without any script parameter.")
+    }
+
     cmd['timestamps'] = cmd['timestamps'] ?: false
     cmd['ansiColor'] = cmd['ansiColor'] ?: true
     cmd['returnStdout'] = cmd['returnStdout'] ?: false
@@ -167,7 +171,7 @@ def call(Map cmd) {
                 // avoid collection failure when called from subdirs
                 archiveArtifacts artifacts: LOG_FILENAME // accepts only paths relative to cwd
             }
-            echo "[sh2] \uD83D\uDD0E unabridged log at ${BUILD_URL}artifact/${LOG_FOLDER}/${LOG_FILENAME}"
+            echo "[sh2] \uD83D\uDD0E unabridged log at ${BUILD_URL}artifact/${LOG_FILENAME}"
         }
         if (error) {
           echo "ERROR: [sh2] finally: ${error}"
@@ -178,6 +182,11 @@ def call(Map cmd) {
     return result
 }
 
-def call(String cmd) {
-    return sh2('script': cmd)
+def call(Map cmd, String script) {
+    cmd['script'] = script
+    return sh2(cmd)
+}
+
+def call(String script) {
+    return sh2('script': script)
 }
