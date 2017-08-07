@@ -167,11 +167,12 @@ def call(Map cmd) {
       error = e
     } finally {
         if (! cmd['returnStdout'] && LOG_FILEPATH) {
-            dir("$WORKSPACE/$LOG_FOLDER") {
+            dir("$WORKSPACE") {
                 // avoid collection failure when called from subdirs
-                archiveArtifacts artifacts: LOG_FILENAME // accepts only paths relative to cwd
+                archiveArtifacts artifacts: "${LOG_FOLDER}/${LOG_FILENAME}" // tricks it into keeping the destination folder
+                // when specific file is mentioned the target becomes root
             }
-            echo "[sh2] \uD83D\uDD0E unabridged log at ${BUILD_URL}artifact/${LOG_FILENAME}"
+            echo "[sh2] \uD83D\uDD0E unabridged log at ${BUILD_URL}artifact/${LOG_FOLDER}/${LOG_FILENAME}"
         }
         if (error) {
           echo "ERROR: [sh2] finally: ${error}"
