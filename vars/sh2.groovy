@@ -130,9 +130,11 @@ def call(Map cmd) {
      // we save the script to the log file, so we can know what commands
      // were executed.
      if (! cmd['compress']) {
-         writeFile file: LOG_FILEPATH,
-                   text: cmd['script'] + '\n# CWD: ' + pwd() + '\n# OUTPUT:\n'
-         } // TODO: implement the same for compressed logs
+         dir("$WORKSPACE") {
+           writeFile file: LOG_FILEPATH,
+                     text: cmd['script'] + '\n# CWD: ' + pwd() + '\n# OUTPUT:\n'
+           } // TODO: implement the same for compressed logs
+         }
     } // end of if !returnStdout
 
     if (verbosity) {
