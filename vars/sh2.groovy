@@ -121,6 +121,7 @@ def call(Map cmd) {
                      LOG_FILEPATH.lastIndexOf(File.separator)+1,
                                                   LOG_FILEPATH.length())
       // wrapper for limiting console output from commands
+      def user_script = cmd['script'] // store for writing it to logfile below
       cmd['script'] = """#!/bin/bash
       set -eo$verbosity pipefail
       # MacOS awk does not have systime() extension
@@ -152,7 +153,7 @@ def call(Map cmd) {
      if (! cmd['compress']) {
          dir("$WORKSPACE") {
            writeFile file: LOG_FILEPATH,
-                     text: cmd['script'] + '\n# CWD: ' + pwd() + '\n# OUTPUT:\n'
+                     text: cmd['script'] + '\n# CWD: ' + pwd() + '\n# SCRIPT: ' + user_script + '\n# OUTPUT:\n'
            } // TODO: implement the same for compressed logs
          }
     } // end of if !returnStdout
