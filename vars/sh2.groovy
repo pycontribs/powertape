@@ -51,16 +51,36 @@ def call(Map cmd) {
     // number of seconds before adding a new progress line
     cmd['progressSeconds'] = cmd['progressSeconds'] ?: 30
     cmd['basename'] = cmd['basename'] ?: false
+    cmd['filters'] = cmd['filters'] ?: ['STRIP_ANSI']
+
 
     def LOG_FILEPATH = false // relative to $WORKSPACE
     def LOG_FILENAME_SUFFIX = ".log"
-    def STRIP_ANSI = "sed 's/\\x1b\\[[0-9;]*m//g'"
     def LOG_FOLDER = '.sh'
-    def filters = [STRIP_ANSI]
+    def BUILTIN_FILTERS = [
+        'STRIP_ANSI': "sed 's/\\x1b\\[[0-9;]*m//g'",
+        'TIMESTAMPS': """awk '{
+            cmd = \"date +\\\"%Y-%m-%d %H:%M:%S.%3N | \\\""
+            cmd | getline now
+            close(cmd)
+            sub(/^/, now)
+            print
+            fflush()
+            }' """
+    ]
+    def filters = []
     def verbosity = ''
     def result = null
 
+    for (int filter_idx=0; filter_idx < cmd['filters'].size(); filter_idx++) {
+        def filter = cmd['filters'][filter_idx]
+        // use filter as key for builtin, if not then as default value for get()
+        // allows usage of filters as: ['STRIP_ANSI', 'rev | base64']
+        filters.add( BUILTIN_FILTERS.get(filter, filter) )
+    }
+
     if (cmd['compress']) {
+      // compression to be last filter, so that others can modify the text
       filters.add("gzip -9 --stdout")
       LOG_FILENAME_SUFFIX = ".log.gz"
     }
