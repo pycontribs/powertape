@@ -44,6 +44,7 @@ def call(Map cmd) {
       error("Fatal: sh2 called without any script parameter.")
     }
 
+    cmd['maxLines'] = cmd['maxLines'] ?: ( env.MAX_LINES ?: 200 )
     cmd['timestamps'] = cmd['timestamps'] ?: false
     cmd['ansiColor'] = cmd['ansiColor'] ?: true
     cmd['returnStdout'] = cmd['returnStdout'] ?: false
@@ -109,7 +110,7 @@ def call(Map cmd) {
 
       ( ${ cmd['script'] } ) 2>&1 | \
           tee >(${ filters.join('|') } >> \$WORKSPACE/$LOG_FILEPATH) | \
-          \$AWK -v offset=\${MAX_LINES:-200} \
+          \$AWK -v offset=${cmd['maxLines']} \
           '{
                if (NR <= offset) print;
                else {
@@ -175,6 +176,7 @@ def call(Map cmd) {
                 // when specific file is mentioned the target becomes root
             }
             echo "[sh2] \uD83D\uDD0E unabridged log at ${BUILD_URL}artifact/${LOG_FOLDER}/${LOG_FILENAME}"
+            sh("grep -s '[B]uild mark:' \"${LOG_FOLDER}/${LOG_FILENAME}\"")
         }
         if (error) {
           echo "ERROR: [sh2] finally: ${error}"
