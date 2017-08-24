@@ -197,7 +197,7 @@ def call(Map cmd) {
                 // when specific file is mentioned the target becomes root
             }
             echo "[sh2] \uD83D\uDD0E unabridged log at ${BUILD_URL}artifact/${LOG_FOLDER}/${LOG_FILENAME}"
-            sh("grep -s '[B]uild mark:' \"${LOG_FOLDER}/${LOG_FILENAME}\"")
+            sh("grep -s '[B]uild mark:' \"${LOG_FOLDER}/${LOG_FILENAME}\" || true")
         }
         if (error) {
           echo "ERROR: [sh2] finally: ${error}"
