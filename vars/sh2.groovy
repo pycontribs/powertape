@@ -55,6 +55,8 @@ def call(Map cmd) {
     cmd['filters'] = cmd['filters'] ?: ['STRIP_ANSI']
 
 
+    def COLOR="\u001B[34m" // blue
+    def NOCOLOR="\u001B[0m"
     def LOG_FILEPATH = false // relative to $WORKSPACE
     def LOG_FILENAME_SUFFIX = ".log"
     def LOG_FOLDER = '.sh'
@@ -139,7 +141,7 @@ def call(Map cmd) {
                    delete a[NR-offset];
                    currTime = systime()
                    if ( (currTime - prevTime) > ${ cmd['progressSeconds'] } ) {
-                       printf "INFO: %s lines redirected to $LOG_FILENAME ...\\n", NR | "cat>&2"
+                       printf "${COLOR}INFO: %s lines redirected to $LOG_FILENAME ...\\n${NOCOLOR}", NR | "cat>&2"
                        prevTime = currTime
                    }
                    }
