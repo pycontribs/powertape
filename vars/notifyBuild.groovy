@@ -6,30 +6,31 @@ reference:
 - https://www.cloudbees.com/blog/sending-notifications-pipeline
 - https://wiki.jenkins.io/display/JENKINS/Email-ext+plugin
 */
+import static hudson.model.Result.FAILURE
+import static hudson.model.Result.SUCCESS
 
+def call() {
 
-def call(String buildStatus = 'STARTED', String message = '') {
-
-  // build status of null means successful
-    buildStatus =  buildStatus ?: 'SUCCESSFUL'
-
-    // Default values
-    def colorName = 'RED'
-    def colorCode = '#FF0000'
-    def subject = "${buildStatus}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
+    // build status of null means successful
+    def subject = "${currentBuild.result ?: 'SUCCESSFUL'}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
     def summary = "${subject} (${env.BUILD_URL})"
     def details = '''${SCRIPT, template="groovy-html.template"}'''
-    // Override default values based on build status
-    if (buildStatus == 'STARTED') {
-      color = 'YELLOW'
-      colorCode = '#FFFF00'
-    } else if (buildStatus == 'SUCCESSFUL') {
-      color = 'GREEN'
-      colorCode = '#00FF00'
-    } else {
-      color = 'RED'
-      colorCode = '#FF0000'
+    def attachLog = false
+    // Allways send a mail to the requestor (the one who started the job)
+    def to = []
+    to << emailextrecipients([[$class: 'RequesterRecipientProvider']])
+
+    // Inform others when the build is not successfull
+    if (!currentBuild.result && currentBuild.result.isWorseThan(SUCCESS)) {
+      attachLog = true
+      to << emailextrecipients([
+        [$class: 'CulpritsRecipientProvider'],
+        [$class: 'DevelopersRecipientProvider'],
+        [$class: 'FailingTestSuspectsRecipientProvider'],
+        [$class: 'UpstreamComitterRecipientProvider']
+        ])
     }
+    to = to.join(',')
 
     // Send notifications
     // slackSend (color: colorCode, message: summary)
@@ -40,16 +41,16 @@ def call(String buildStatus = 'STARTED', String message = '') {
         subject: subject,
         body: details,
         mimeType: 'text/html',
-        attachLog: currentBuild.result != "SUCCESS",
+        attachLog: attachLog,
+        replyTo: '$DEFAULT_REPLYTO',
+        to: to,
         // compressLog: false
-        // replyTo
-        recipientProviders: [
-          [$class: 'DevelopersRecipientProvider'],
-          [$class: 'CulpritsRecipientProvider'],
-          [$class: 'RequesterRecipientProvider'],
-          [$class: 'FailingTestSuspectsRecipientProvider'],
-          [$class: 'UpstreamComitterRecipientProvider']
-          ]
+        // recipientProviders: [
+        //   [$class: 'DevelopersRecipientProvider'],
+        //   //[$class: 'CulpritsRecipientProvider'],
+        //   //[$class: 'RequesterRecipientProvider'],
+        //   [$class: 'FailingTestSuspectsRecipientProvider'],
+        //   [$class: 'UpstreamComitterRecipientProvider']
+        //   ]
       )
-
-}
+  }
