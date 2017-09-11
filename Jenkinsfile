@@ -124,8 +124,8 @@ timestamps {
                     echo "[sh2] 006"
                     sh2 basename: "sh-006", script: 'date -u +"%Y-%m-%dT%H:%M:%SZ"'
 
-                    echo "[sh2] 007"
-                    sh2 basename: "sh-007", 'date -u +"%Y-%m-%dT%H:%M:%SZ"'
+                    echo "[sh2] tox"
+                    sh2 basename: "tox", 'tox'
 
                     echo "[niceprefix] ${niceprefix()}"
                 }
