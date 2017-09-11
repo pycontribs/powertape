@@ -135,15 +135,7 @@ timestamps {
         catch (error) {
             println "Exception ${error.getClass()} received: ${error}"
 
-            emailext attachLog: true,
-                    body: "Build failed (see ${env.BUILD_URL}): ${error}",
-                    subject: "[JENKINS] ${env.JOB_NAME} failed",
-                    recipientProviders: [
-                      [$class: 'DevelopersRecipientProvider'],
-                      [$class: 'CulpritsRecipientProvider']]
-                    //to: RECIPIENTS
-                    // compressLog: false
-                    // replyTo
+            notifyBuild(currentBuild.result, error=errror)
             throw error
         }
         finally {
@@ -155,6 +147,9 @@ timestamps {
                 // defaultExcludes: true
                 // caseSensitive: false
                 // onlyIfSuccessful: false
+
+                notifyBuild(currentBuild.result)
+
             } // end-clean
         } // finally
     } // node
