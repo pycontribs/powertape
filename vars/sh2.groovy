@@ -34,7 +34,7 @@
 */
 
 
-def call(Map cmd) {
+def call_wrong_change(Map cmd) {
     /*
     - one progressbar dot is added for each line above the head limit
     - progresbar goes to stderr, not stdout
