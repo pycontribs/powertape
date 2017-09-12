@@ -36,8 +36,23 @@ properties([
 try {
     timestamps {
 
+        // if ansicolor is not enabled these should be without color
+        log "debug", level="DEBUG"
+        log "info", level="INFO"
+        log "warn", level="WARN"
+        log "ERROR", level="ERROR"
+
+        ansiColor {
+          log "debug", level="DEBUG"
+          log "info", level="INFO"
+          log "warn", level="WARN"
+          log "ERROR", level="ERROR"
+
+        }
+
+
         // some tools could fail if no TERM is defined
-        env.TERM = env.TERM ?: 'xterm-color'
+        // env.TERM = env.TERM ?: 'xterm-color'
 
         // Inspired from http://unix.stackexchange.com/questions/148/colorizing-your-terminal-and-shell-environment
         env.ANSIBLE_FORCE_COLOR = env.ANSIBLE_FORCE_COLOR ?: 'true'
@@ -48,6 +63,7 @@ try {
         node('master') {
 
             try {
+
 
                 // we don't want any leftovers to influence our execution (like previous logs)
                 step([$class: 'WsCleanup'])
