@@ -14,6 +14,25 @@
     instead of .log files
   - progressSeconds: 30 - number of seconds to wait before adding a new
     progress line.
+  - maxLines: 200 - maximum of lines to (head+tail) from output,
+    this parameter overrides env.MAX_LINES and or default 200
+  - filters: ['STRIP_ANSI'] - list of filters to apply to output stored in log file,
+    List can contain names of builtin filters or commands (both as strings).
+    There are two builtin filters which can be referenced by name:
+    - STRIP_ANSI (removes ansi color markup from output)
+    - TIMESTAMPS (prepends plaintext timestamp to every line in log file)
+    Aside these two, any other command (chain) can be specified,
+    and these can be mixed e.g.:
+      filters: ['STRIP_ANSI', 'grep "[abc]" | sort -u', 'md5sum', 'TIMESTAMPS']
+      would take uniq sorted lines containing latter a, b or c,
+      but instead of this output prints it's md5sum and prepends timestamp to it
+  - echoScript: true - if to print code/script which will be run,
+    and url of the log to the console output first, before it's execution
+  - workspaceStepNodeNum: -1 - number of node (in url) in your job/build's
+    'Pipeline Steps' (flowGraphTable), which acquires the slave with node()
+    and so the one which has access to workspace, if provided and >0,
+    this enables generating urls to log files LIVE, in workspace,
+    usable even while job is running.
 
   Degrades gracedully: Unless you use the newly added parameters your
   pipeline code would work even when the new sh() is not loaded.
@@ -44,19 +63,32 @@ def call(Map cmd) {
       error("Fatal: sh2 called without any script parameter.")
     }
 
-    cmd['maxLines'] = cmd['maxLines'] ?: ( env.MAX_LINES ?: 200 )
-    cmd['timestamps'] = cmd['timestamps'] ?: false
-    cmd['ansiColor'] = cmd['ansiColor'] ?: true
-    cmd['returnStdout'] = cmd['returnStdout'] ?: false
-    cmd['compress'] = cmd['compress'] ?: false
+    cmd['maxLines'] = cmd.get('maxLines', env.MAX_LINES ?: 200 )
+    cmd['timestamps'] = cmd.get('timestamps', false)
+    cmd['ansiColor'] = cmd.get('ansiColor', true)
+    cmd['returnStdout'] = cmd.get('returnStdout', false)
+    cmd['compress'] = cmd.get('compress', false)
     // number of seconds before adding a new progress line
-    cmd['progressSeconds'] = cmd['progressSeconds'] ?: 30
-    cmd['basename'] = cmd['basename'] ?: false
-    cmd['filters'] = cmd['filters'] ?: ['STRIP_ANSI']
+    cmd['progressSeconds'] = cmd.get('progressSeconds', 30)
+    cmd['basename'] = cmd.get('basename', false)
+    cmd['filters'] = cmd.get('filters', ['STRIP_ANSI'])
+    cmd['echoScript'] = cmd.get('echoScript', true)
+    cmd['workspaceStepNodeNum'] = cmd.get('workspaceStepNodeNum', 0)
 
-
-    def COLOR="\u001B[34m" // blue
-    def NOCOLOR="\u001B[0m"
+    def INFO_COLOR=''
+    def DEBUG_COLOR=''
+    def ERROR_COLOR=''
+    def NO_COLOR=''
+    // test if we can use ANSI, ansiColor can be false if wrapper is already on
+    if (cmd['ansiColor'] || (env.TERM ?: '').toLowerCase().contains('xterm')) {
+        INFO_COLOR="\u001B[32m" // green
+        DEBUG_COLOR="\u001B[33m" // yellow
+        ERROR_COLOR="\u001B[31m" // red
+        NO_COLOR="\u001B[0m"
+    }
+    ansiColor {
+      echo "TEST: ${ERROR_COLOR}ERROR ${INFO_COLOR} INFO ${DEBUG_COLOR}DEBUG \u001B[31m ANOTHER ${NO_COLOR}"
+    }
     def LOG_FILEPATH = false // relative to $WORKSPACE
     def LOG_FILENAME_SUFFIX = ".log"
     def LOG_FOLDER = '.sh'
@@ -74,6 +106,8 @@ def call(Map cmd) {
     def filters = []
     def verbosity = ''
     def result = null
+
+    def boundary_marker = ('\u2500' * 60)
 
     for (int filter_idx=0; filter_idx < cmd['filters'].size(); filter_idx++) {
         def filter = cmd['filters'][filter_idx]
@@ -141,7 +175,7 @@ def call(Map cmd) {
                    delete a[NR-offset];
                    currTime = systime()
                    if ( (currTime - prevTime) > ${ cmd['progressSeconds'] } ) {
-                       printf "${COLOR}INFO: %s lines redirected to $LOG_FILENAME ...\\n${NOCOLOR}", NR | "cat>&2"
+                       printf "${INFO_COLOR}INFO: %s lines redirected to $LOG_FILENAME ...\\n${NO_COLOR}", NR | "cat>&2"
                        prevTime = currTime
                    }
                    }
@@ -151,18 +185,28 @@ def call(Map cmd) {
              { print a[i]}
            }'
       """
-     // we save the script to the log file, so we can know what commands
-     // were executed.
-     if (! cmd['compress']) {
-         dir("$WORKSPACE") {
-           writeFile file: LOG_FILEPATH,
-                     text: cmd['script'] + '\n# CWD: ' + pwd() + '\n# SCRIPT: ' + user_script + '\n# OUTPUT:\n'
-           } // TODO: implement the same for compressed logs
-         }
+      // we save the script to the log file, so we can know what commands
+      // were executed.
+      if (! cmd['compress']) {
+          dir("$WORKSPACE") {
+            writeFile file: LOG_FILEPATH,
+                      text: cmd['script'] + '\n# CWD: ' + pwd() + '\n# SCRIPT: ' + user_script.stripIndent() + '\n# OUTPUT:\n'
+          } // TODO: implement the same for compressed logs
+      }
+      def header_text = ''
+      if (cmd['echoScript']) {
+          header_text += "[sh2] \u256D${boundary_marker}\n${user_script.stripIndent()}\n"
+          header_text += "[sh2] \uD83D\uDD0E unabridged log at ${BUILD_URL}artifact/${LOG_FOLDER}/${LOG_FILENAME}\n"
+      }
+      if (cmd['workspaceStepNodeNum'] > 0) {
+          header_text += "[sh2] \uD83D\uDC41 live log at ${BUILD_URL}execution/node/${cmd['workspaceStepNodeNum']}/ws/${LOG_FOLDER}/${LOG_FILENAME}\n"
+      }
+      if ( header_text ) { echo header_text }
+
     } // end of if !returnStdout
 
     if (verbosity) {
-       echo "DEBUG: [sh2] params: ${cmd}"
+       echo "${DEBUG_COLOR}DEBUG: [sh2] params: ${cmd}${NO_COLOR}"
     }
 
     def error = false
@@ -189,7 +233,7 @@ def call(Map cmd) {
             }
         }
     } catch (e) {
-      echo "ERROR: [sh2] ${e}"
+      echo "${ERROR_COLOR}ERROR: [sh2] ${e}${NO_COLOR}"
       error = e
     } finally {
         if (! cmd['returnStdout'] && LOG_FILEPATH) {
@@ -198,15 +242,21 @@ def call(Map cmd) {
                 archiveArtifacts artifacts: "${LOG_FOLDER}/${LOG_FILENAME}" // tricks it into keeping the destination folder
                 // when specific file is mentioned the target becomes root
             }
-            echo "[sh2] \uD83D\uDD0E unabridged log at ${BUILD_URL}artifact/${LOG_FOLDER}/${LOG_FILENAME}"
-            sh("grep -s '[B]uild mark:' \"${LOG_FOLDER}/${LOG_FILENAME}\" || true")
+            if (! cmd['echoScript']) { // echoScript prints url before execution
+                echo "[sh2] \uD83D\uDD0E unabridged log at ${BUILD_URL}artifact/${LOG_FOLDER}/${LOG_FILENAME}"
+            } else {
+                echo "[sh2] \u2570${boundary_marker}"
+            }
+            // TODO(psedlak): hide xtrace of this grep later, when proven working in all jobs
+            // for now keep it verbose, later prepend bash shebang to run without xtrace
+            sh("grep -s '[B]uild mark:' \"\$WORKSPACE/${LOG_FOLDER}/${LOG_FILENAME}\" || true")
         }
         if (error) {
-          echo "ERROR: [sh2] finally: ${error}"
+          echo "${ERROR_COLOR}ERROR: [sh2] finally: ${error}${NO_COLOR}"
           throw error
         }
     }
-    echo "DEBUG: [sh2] returning ${result}"
+    echo "${DEBUG_COLOR}DEBUG: [sh2] returning ${result}${NO_COLOR}"
     return result
 }
 
