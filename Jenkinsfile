@@ -37,16 +37,16 @@ try {
     timestamps {
 
         // if ansicolor is not enabled these should be without color
-        log "debug", level="DEBUG"
-        log "info", level="INFO"
-        log "warn", level="WARN"
-        log "ERROR", level="ERROR"
+        log "debug", level: "DEBUG"
+        log "info", level: "INFO"
+        log "warn", level: "WARN"
+        log "error", level: "ERROR"
 
         ansiColor {
-          log "debug", level="DEBUG"
-          log "info", level="INFO"
-          log "warn", level="WARN"
-          log "ERROR", level="ERROR"
+          log "debug", level: "DEBUG"
+          log "info", level: "INFO"
+          log "warn", level: "WARN"
+          log "error", level: "ERROR"
         }
 
 

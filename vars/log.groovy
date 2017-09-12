@@ -9,7 +9,19 @@ ERROR which could appear colored when console supports ANSI coloring.
 //   }
 // }
 
-String call(String msg, String level = 'INFO') {
+def call(Map params = [:], def msg = null) {
+/* This signature allow all sorts of calling types, including:
+
+  log "foo", level: 'WARN'
+  log msg: "foo", level: 'WARN'
+  log "foo"
+  log Exception("xxx") (or anything that has toString()
+
+*/
+    if (!msg) {
+      msg = params.msg
+    }
+    level = params.level ?: 'INFO'
 
     def levels = [
       'DEBUG': '\u001B[34m', // blue
@@ -28,3 +40,14 @@ String call(String msg, String level = 'INFO') {
         echo "${level}: ${msg}"
     }
 }
+//
+// def call(def msg) {
+//     // msg can be non String
+//     return log (msg: msg, level: 'INFO')
+// }
+//
+// def call(def msg, Map params) {
+//     // msg can be non String
+//     params.msg = msg
+//     return log (params)
+// }

@@ -89,7 +89,7 @@ String call() {
 
   String result = new Date().format('ddHH-') + shortened.take(40) + '-' + md5(build_name, 4)
 
-  log "[niceprefix] ${build_name} shortened as \u001B[34m${result}", level='DEBUG'
+  log "[niceprefix] ${build_name} shortened as \u001B[34m${result}", level: 'DEBUG'
   if (result.size() > 63) {
     throw new RuntimeException("niceprefix failed to generate safe prefix.")
   }

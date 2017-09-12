@@ -9,7 +9,7 @@ reference:
 import static hudson.model.Result.FAILURE
 import static hudson.model.Result.SUCCESS
 
-def call() {
+def call(Map params = [:]) {
 
     // build status of null means successful
     def subject = "${currentBuild.result ?: 'SUCCESSFUL'}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
@@ -30,22 +30,29 @@ def call() {
         [$class: 'UpstreamComitterRecipientProvider']
         ])
     }
-    to = to.join(',')
-
-    if (env.DEBUG) {
-      echo "Sending emails to: ${to}"
-    }
 
     // https://github.com/jenkinsci/ownership-plugin/blob/master/doc/PipelineIntegration.md
     if (ownership?.job?.ownershipEnabled) {
       to << ownership.job.primaryOwnerEmail
-      to << ownership.job.secondaryOwnerEmails
+      to += ownership.job.secondaryOwnerEmails
     }
-    if (ownership?.node?.ownershipEnabled) {
-      to << ownership.node.primaryOwnerEmail
-      to << ownership.node.secondaryOwnerEmails
+    try {
+      if (ownership?.node?.ownershipEnabled) {
+        to << ownership.node.primaryOwnerEmail
+        to += ownership.node.secondaryOwnerEmails
+      }
+    }
+    catch (e) {
+       log "[notifyBuild] ${e}", level: 'WARN'
     }
 
+    to.unique() // remove duplicates
+    to.removeAll { !it } // remove null or false elements
+    to = to.join(',')
+
+    if (env.DEBUG) {
+      log "Sending emails to: ${to}", level: 'DEBUG'
+    }
     // Send notifications
     // slackSend (color: colorCode, message: summary)
 
@@ -68,3 +75,9 @@ def call() {
         //   ]
       )
   }
+
+def call(def msg, Map params = [:]) {
+  // msg can be a non String like an exception.
+  params.msg = msg
+  return notifyBuild(params)
+}

@@ -204,7 +204,7 @@ def call(Map cmd) {
     } // end of if !returnStdout
 
     if (verbosity) {
-       log "[sh2] params: ${cmd}", level='DEBUG'
+       log "[sh2] params: ${cmd}", level: 'DEBUG'
     }
 
     def error = false
@@ -231,7 +231,7 @@ def call(Map cmd) {
             }
         }
     } catch (e) {
-      log "[sh2] ${e}", level='ERROR'
+      log "[sh2] ${e}", level: 'ERROR'
       error = e
     } finally {
         if (! cmd['returnStdout'] && LOG_FILEPATH) {
@@ -250,11 +250,11 @@ def call(Map cmd) {
             sh("grep -s '[B]uild mark:' \"\$WORKSPACE/${LOG_FOLDER}/${LOG_FILENAME}\" || true")
         }
         if (error) {
-          log "[sh2] finally: ${error}", level='ERROR'
+          log "[sh2] finally: ${error}", level: 'ERROR'
           throw error
         }
     }
-    log "[sh2] returning ${result}", level='DEBUG'
+    log "[sh2] returning ${result}", level: 'DEBUG'
     return result
 }
 
