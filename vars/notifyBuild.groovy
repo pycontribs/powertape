@@ -32,6 +32,20 @@ def call() {
     }
     to = to.join(',')
 
+    if (env.DEBUG) {
+      echo "Sending emails to: ${to}"
+    }
+
+    // https://github.com/jenkinsci/ownership-plugin/blob/master/doc/PipelineIntegration.md
+    if (ownership?.job?.ownershipEnabled) {
+      to << ownership.job.primaryOwnerEmail
+      to << ownership.job.secondaryOwnerEmails
+    }
+    if (ownership?.node?.ownershipEnabled) {
+      to << ownership.node.primaryOwnerEmail
+      to << ownership.node.secondaryOwnerEmails
+    }
+
     // Send notifications
     // slackSend (color: colorCode, message: summary)
 
