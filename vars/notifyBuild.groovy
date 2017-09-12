@@ -20,8 +20,8 @@ def call() {
     def to = []
     to << emailextrecipients([[$class: 'RequesterRecipientProvider']])
 
-    // Inform others when the build is not successfull
-    if (!currentBuild.result && currentBuild.result.isWorseThan(SUCCESS)) {
+    // Inform others when the build is *not* successfull
+    if (currentBuild.result && currentBuild.result.isWorseThan(SUCCESS)) {
       attachLog = true
       to << emailextrecipients([
         [$class: 'CulpritsRecipientProvider'],
