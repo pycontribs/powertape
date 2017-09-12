@@ -23,8 +23,9 @@ def venv(String environment = '.venv', String script) {
 
         # using system gives great speed and disk usage improvements
         pip check && VIRTUALENV_SYSTEM_SITE_PACKAGES=1 || \
-                echo "WARNING: Conflicts found on system python packages, for safety " \
-                     "we will create and use an isolated virtualenv. Slower but safer."
+                log "Conflicts found on system python packages, for safety " \
+                    "we will create and use an isolated virtualenv. Slower but safer.",
+                    level: 'WARN'
 
         virtualenv "${environment}"
         PS1= source ${environment}/bin/activate

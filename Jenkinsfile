@@ -47,7 +47,6 @@ try {
           log "info", level="INFO"
           log "warn", level="WARN"
           log "ERROR", level="ERROR"
-
         }
 
 
@@ -91,7 +90,7 @@ try {
                 stage("sh2") {
                     withEnv(["MAX_LINES=2"]) {
                         // should display 1,2,4,5 (missing 3) and sh.log
-                        echo "[sh2] 001"
+                        log "[sh2] 001"
                         def result = sh2 script: "pwd; seq 5; exit 0", returnStatus: true
 
                         if (result != 0) {
@@ -99,7 +98,7 @@ try {
                             currentBuild.result = 'FAILURE'
                         }
 
-                        echo "[sh2] 002"
+                        log "[sh2] 002"
                         sh "mkdir -p foo"
                         dir("foo") {
                           // should generate and archive $WORKSPACE/.sh/ansitest.log
@@ -110,12 +109,12 @@ try {
                               }
                         }
 
-                        echo "[sh2] 003"
+                        log "[sh2] 003"
                         // should create "date.log"
                         sh2 script: 'date -u +"%Y-%m-%dT%H:%M:%SZ"',
                             basename: "date"
 
-                        echo "[sh2] 004"
+                        log "[sh2] 004"
                         // should generate sh-1.log.gz
                         sh2 script: """#!/bin/bash
                             for i in \$(seq 100)
@@ -126,7 +125,7 @@ try {
                             compress: true,
                             progressSeconds: 5
 
-                        echo "[sh2] 005"
+                        log "[sh2] 005"
                         // this should not generate a log file or limit the output due
                         // to returnStdout: true
                         result = sh2 script: "seq 5", returnStdout: true
@@ -138,13 +137,13 @@ try {
                             currentBuild.result = 'FAILURE'
                         }
 
-                        echo "[sh2] 006"
+                        log "[sh2] 006"
                         sh2 basename: "sh-006", script: 'date -u +"%Y-%m-%dT%H:%M:%SZ"'
 
-                        echo "[sh2] tox"
+                        log "[sh2] tox"
                         sh2 basename: "tox", 'tox'
 
-                        echo "[niceprefix] ${niceprefix()}"
+                        log "[niceprefix] ${niceprefix()}"
                     }
                 }
                 // end-of-unittests

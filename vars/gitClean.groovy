@@ -11,7 +11,7 @@
 String call() {
     timeout(time: 60, unit: 'SECONDS') {
         if (fileExists('.git')) {
-            echo 'Found Git repository: using Git to clean the tree.'
+            log 'Found Git repository: using Git to clean the tree.'
             // The sequence of reset --hard and clean -fdx first
             // in the root and then using submodule foreach
             // is based on how the Jenkins Git SCM clean before checkout
@@ -26,7 +26,7 @@ String call() {
         }
         else
         {
-            echo 'No Git repository found: using deleteDir() to wipe clean'
+            log 'No Git repository found: using deleteDir() to wipe clean'
             deleteDir()
         }
     }

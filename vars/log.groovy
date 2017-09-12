@@ -21,10 +21,10 @@ String call(String msg, String level = 'INFO') {
 
     if ((env.TERM ?: '').toLowerCase().contains('xterm')) {
       ansiColor {
-        echo "${levels[level]}${msg}${levels['UNSET']}"
+        echo "${levels[level]}${level}: ${msg}${levels['UNSET']}"
       }
     }
     else {
-        echo msg
+        echo "${level}: ${msg}"
     }
 }

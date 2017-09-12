@@ -86,9 +86,7 @@ def call(Map cmd) {
         ERROR_COLOR="\u001B[31m" // red
         NO_COLOR="\u001B[0m"
     }
-    ansiColor {
-      echo "TEST: ${ERROR_COLOR}ERROR ${INFO_COLOR} INFO ${DEBUG_COLOR}DEBUG \u001B[31m ANOTHER ${NO_COLOR}"
-    }
+
     def LOG_FILEPATH = false // relative to $WORKSPACE
     def LOG_FILENAME_SUFFIX = ".log"
     def LOG_FOLDER = '.sh'
@@ -201,12 +199,12 @@ def call(Map cmd) {
       if (cmd['workspaceStepNodeNum'] > 0) {
           header_text += "[sh2] \uD83D\uDC41 live log at ${BUILD_URL}execution/node/${cmd['workspaceStepNodeNum']}/ws/${LOG_FOLDER}/${LOG_FILENAME}\n"
       }
-      if ( header_text ) { echo header_text }
+      if ( header_text ) { log header_text }
 
     } // end of if !returnStdout
 
     if (verbosity) {
-       echo "${DEBUG_COLOR}DEBUG: [sh2] params: ${cmd}${NO_COLOR}"
+       log "[sh2] params: ${cmd}", level='DEBUG'
     }
 
     def error = false
@@ -233,7 +231,7 @@ def call(Map cmd) {
             }
         }
     } catch (e) {
-      echo "${ERROR_COLOR}ERROR: [sh2] ${e}${NO_COLOR}"
+      log "[sh2] ${e}", level='ERROR'
       error = e
     } finally {
         if (! cmd['returnStdout'] && LOG_FILEPATH) {
@@ -243,20 +241,20 @@ def call(Map cmd) {
                 // when specific file is mentioned the target becomes root
             }
             if (! cmd['echoScript']) { // echoScript prints url before execution
-                echo "[sh2] \uD83D\uDD0E unabridged log at ${BUILD_URL}artifact/${LOG_FOLDER}/${LOG_FILENAME}"
+                log "[sh2] \uD83D\uDD0E unabridged log at ${BUILD_URL}artifact/${LOG_FOLDER}/${LOG_FILENAME}"
             } else {
-                echo "[sh2] \u2570${boundary_marker}"
+                log "[sh2] \u2570${boundary_marker}"
             }
             // TODO(psedlak): hide xtrace of this grep later, when proven working in all jobs
             // for now keep it verbose, later prepend bash shebang to run without xtrace
             sh("grep -s '[B]uild mark:' \"\$WORKSPACE/${LOG_FOLDER}/${LOG_FILENAME}\" || true")
         }
         if (error) {
-          echo "${ERROR_COLOR}ERROR: [sh2] finally: ${error}${NO_COLOR}"
+          log "[sh2] finally: ${error}", level='ERROR'
           throw error
         }
     }
-    echo "${DEBUG_COLOR}DEBUG: [sh2] returning ${result}${NO_COLOR}"
+    log "[sh2] returning ${result}", level='DEBUG'
     return result
 }
 
