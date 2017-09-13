@@ -170,5 +170,6 @@ try {
     } // timestamps
 } // try
 finally {
-  notifyBuild()
+  notifyBuild() // implies format: 'html'
+  notifyBuild(format: 'text')
 }

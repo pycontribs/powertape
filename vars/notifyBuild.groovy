@@ -12,7 +12,17 @@ def call(Map params = [:]) {
     // build status of null means successful
     def subject = "${currentBuild.result ?: 'SUCCESSFUL'}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
     def summary = "${subject} (${env.BUILD_URL})"
-    def details = '''${SCRIPT, template="groovy-html.template"}'''
+    def mimeType = 'text/html'
+    def format = params.format ?: 'html'
+    def details = ''
+
+    if (format!='html') {
+      mimeType = 'text/plain'
+      details = '''${SCRIPT, template="groovy-text.template"}'''
+    } else {
+      mimeType = 'text/html'
+      details = '''${SCRIPT, template="groovy-html.template"}'''
+    }
     def attachLog = false
     // Allways send a mail to the requestor (the one who started the job)
     def to = []
@@ -59,7 +69,7 @@ def call(Map params = [:]) {
     emailext (
         subject: subject,
         body: details,
-        mimeType: 'text/html',
+        mimeType: mimeType,
         attachLog: attachLog,
         replyTo: '$DEFAULT_REPLYTO',
         to: to,
