@@ -44,15 +44,16 @@ def call(Map params = [:]) {
       to << ownership.job.primaryOwnerEmail
       to += ownership.job.secondaryOwnerEmails
     }
-    try {
-      if (ownership?.node?.ownershipEnabled) {
-        to << ownership.node.primaryOwnerEmail
-        to += ownership.node.secondaryOwnerEmails
-      }
-    }
-    catch (e) {
-       log "[notifyBuild] ${e}", level: 'WARN'
-    }
+    // disabled to avoid affecting the build result
+    // try {
+    //   if (ownership?.node?.ownershipEnabled) {
+    //     to << ownership.node.primaryOwnerEmail
+    //     to += ownership.node.secondaryOwnerEmails
+    //   }
+    // }
+    // catch (e) {
+    //    log "[notifyBuild] ${e}", level: 'WARN'
+    // }
 
     to.unique() // remove duplicates
     to.removeAll { !it } // remove null or false elements
