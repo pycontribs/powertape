@@ -6,8 +6,6 @@ reference:
 - https://www.cloudbees.com/blog/sending-notifications-pipeline
 - https://wiki.jenkins.io/display/JENKINS/Email-ext+plugin
 */
-import static hudson.model.Result.FAILURE
-import static hudson.model.Result.SUCCESS
 
 def call(Map params = [:]) {
 
@@ -21,7 +19,7 @@ def call(Map params = [:]) {
     to << emailextrecipients([[$class: 'RequesterRecipientProvider']])
 
     // Inform others when the build is *not* successfull
-    if (currentBuild.result && currentBuild.result.isWorseThan(SUCCESS)) {
+    if (currentBuild.result && currentBuild.result != 'SUCCESS') {
       attachLog = true
       to << emailextrecipients([
         [$class: 'CulpritsRecipientProvider'],
