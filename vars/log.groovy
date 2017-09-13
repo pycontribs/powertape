@@ -32,20 +32,18 @@ def call(Map params = [:], def msg = null) {
     ]
 
     if ((env.TERM ?: '').toLowerCase().contains('xterm')) {
-      ansiColor {
         echo "${levels[level]}${level}: ${msg}${levels['UNSET']}"
-      }
     }
     else {
         echo "${level}: ${msg}"
     }
 }
-//
-// def call(def msg) {
-//     // msg can be non String
-//     return log (msg: msg, level: 'INFO')
-// }
-//
+
+def call(def msg) {
+    // msg can be non String
+    return log (msg: msg, level: 'INFO')
+}
+
 // def call(def msg, Map params) {
 //     // msg can be non String
 //     params.msg = msg
