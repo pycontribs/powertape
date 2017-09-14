@@ -37,18 +37,19 @@ try {
     timestamps {
 
         // if ansicolor is not enabled these should be without color
-        log "debug", level: "DEBUG"
-        log "info", level: "INFO"
-        log "warn", level: "WARN"
-        log "error", level: "ERROR"
+        log "debug outside ansiColor block", level: "DEBUG"
+        log "info outside ansiColor block", level: "INFO"
+        log "warn outside ansiColor block", level: "WARN"
+        log "error outside ansiColor block", level: "ERROR"
+        log "fatal outside ansiColor block", level: "FATAL"
 
-        ansiColor {
-          log "debug", level: "DEBUG"
-          log "info", level: "INFO"
-          log "warn", level: "WARN"
-          log "error", level: "ERROR"
-        }
-
+        // xterm is needed to be able to configure colors in Jenkins
+        ansiColor('xterm') {
+          log "debug inside ansiColor block", level: "DEBUG"
+          log "info inside ansiColor block", level: "INFO"
+          log "warn inside ansiColor block", level: "WARN"
+          log "error inside ansiColor block", level: "ERROR"
+          log "fatal inside ansiColor block", level: "FATAL"
 
         // some tools could fail if no TERM is defined
         // env.TERM = env.TERM ?: 'xterm-color'
@@ -140,8 +141,9 @@ try {
                         log "[sh2] 006"
                         sh2 basename: "sh-006", script: 'date -u +"%Y-%m-%dT%H:%M:%SZ"'
 
-                        log "[sh2] tox"
-                        sh2 basename: "tox", 'tox'
+                        log "[sh2] testing escaping of complex commands"
+                        cmd = "true && printf \"${getANSI('PASS')}PASS${getANSI()}\n\""
+                        sh2 basename: "sh-007", echoScript: true, cmd
 
                         log "[niceprefix] ${niceprefix()}"
                     }
@@ -167,6 +169,7 @@ try {
                 } // end-clean
             } // finally
         } // node
+      } // ansiColor
     } // timestamps
 } // try
 finally {

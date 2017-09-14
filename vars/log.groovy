@@ -3,11 +3,6 @@
 ERROR which could appear colored when console supports ANSI coloring.
 */
 
-// def ansi_message(msg){
-//   return {
-//     echo msg
-//   }
-// }
 
 def call(Map params = [:], def msg = null) {
 /* This signature allow all sorts of calling types, including:
@@ -23,29 +18,10 @@ def call(Map params = [:], def msg = null) {
     }
     level = params.level ?: 'INFO'
 
-    def levels = [
-      'DEBUG': '\u001B[34m', // blue
-      'INFO': '\u001B[32m', // green
-      'WARN': '\u001B[33m', // yellow
-      'ERROR': '\u001B[31m', // red
-      'UNSET': '\u001B[0m' // clear/defaults
-    ]
-
-    if ((env.TERM ?: '').toLowerCase().contains('xterm')) {
-        echo "${levels[level]}${level}: ${msg}${levels['UNSET']}"
-    }
-    else {
-        echo "${level}: ${msg}"
-    }
+    echo "${getANSI(level)}${level}: ${msg}${getANSI()}"
 }
 
 def call(def msg) {
     // msg can be non String
     return log (msg: msg, level: 'INFO')
 }
-
-// def call(def msg, Map params) {
-//     // msg can be non String
-//     params.msg = msg
-//     return log (params)
-// }

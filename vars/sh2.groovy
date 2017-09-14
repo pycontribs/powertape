@@ -75,17 +75,6 @@ def call(Map cmd) {
     cmd['echoScript'] = cmd.get('echoScript', true)
     cmd['workspaceStepNodeNum'] = cmd.get('workspaceStepNodeNum', 0)
 
-    def INFO_COLOR=''
-    def DEBUG_COLOR=''
-    def ERROR_COLOR=''
-    def NO_COLOR=''
-    // test if we can use ANSI, ansiColor can be false if wrapper is already on
-    if (cmd['ansiColor'] || (env.TERM ?: '').toLowerCase().contains('xterm')) {
-        INFO_COLOR="\u001B[32m" // green
-        DEBUG_COLOR="\u001B[33m" // yellow
-        ERROR_COLOR="\u001B[31m" // red
-        NO_COLOR="\u001B[0m"
-    }
 
     def LOG_FILEPATH = false // relative to $WORKSPACE
     def LOG_FILENAME_SUFFIX = ".log"
@@ -119,7 +108,7 @@ def call(Map cmd) {
       filters.add("gzip -9 --stdout")
       LOG_FILENAME_SUFFIX = ".log.gz"
     }
-    if (env.DEBUG && env.DEBUG != 'false') {
+    if (env.PIPELINE_DEBUG && env.PIPELINE_DEBUG != 'false') {
       verbosity = 'x' // for use in bash set -x
     }
 
@@ -173,7 +162,7 @@ def call(Map cmd) {
                    delete a[NR-offset];
                    currTime = systime()
                    if ( (currTime - prevTime) > ${ cmd['progressSeconds'] } ) {
-                       printf "${INFO_COLOR}INFO: %s lines redirected to $LOG_FILENAME ...\\n${NO_COLOR}", NR | "cat>&2"
+                       printf "${getANSI('DEBUG')}DEBUG: %s lines redirected to $LOG_FILENAME ...${getANSI()}\\n", NR | "cat>&2"
                        prevTime = currTime
                    }
                    }
@@ -191,15 +180,19 @@ def call(Map cmd) {
                       text: cmd['script'] + '\n# CWD: ' + pwd() + '\n# SCRIPT: ' + user_script.stripIndent() + '\n# OUTPUT:\n'
           } // TODO: implement the same for compressed logs
       }
-      def header_text = ''
+      def msg = ''
       if (cmd['echoScript']) {
-          header_text += "[sh2] \u256D${boundary_marker}\n${user_script.stripIndent()}\n"
-          header_text += "[sh2] \uD83D\uDD0E unabridged log at ${BUILD_URL}artifact/${LOG_FOLDER}/${LOG_FILENAME}\n"
+          // we escape the escape in order to avoid messing ANSI coloring when we print it
+          // .replaceAll('\n',/\\s\\n/) -- to make it an ungly single line
+          msg += "${getANSI('DEBUG')}[sh2] \u256D${boundary_marker}\n${user_script.stripIndent().replaceAll('\u001B','\\\\u001B')}${getANSI()}\n"
       }
       if (cmd['workspaceStepNodeNum'] > 0) {
-          header_text += "[sh2] \uD83D\uDC41 live log at ${BUILD_URL}execution/node/${cmd['workspaceStepNodeNum']}/ws/${LOG_FOLDER}/${LOG_FILENAME}\n"
+          msg += "[sh2] \uD83D\uDC41 live log at ${BUILD_URL}execution/node/${cmd['workspaceStepNodeNum']}/ws/${LOG_FOLDER}/${LOG_FILENAME}\n"
       }
-      if ( header_text ) { log header_text }
+      if (cmd['echoScript']) {
+          msg += "${getANSI('INFO')}[sh2] \uD83D\uDD0E unabridged log at ${BUILD_URL}artifact/${LOG_FOLDER}/${LOG_FILENAME}${getANSI()}\n"
+      }
+      if ( msg ) { log msg, level: "INFO" }
 
     } // end of if !returnStdout
 
@@ -231,7 +224,6 @@ def call(Map cmd) {
             }
         }
     } catch (e) {
-      log "[sh2] ${e}", level: 'ERROR'
       error = e
     } finally {
         if (! cmd['returnStdout'] && LOG_FILEPATH) {
@@ -241,16 +233,13 @@ def call(Map cmd) {
                 // when specific file is mentioned the target becomes root
             }
             if (! cmd['echoScript']) { // echoScript prints url before execution
-                log "[sh2] \uD83D\uDD0E unabridged log at ${BUILD_URL}artifact/${LOG_FOLDER}/${LOG_FILENAME}"
+                log "[sh2] \uD83D\uDD0E unabridged log at ${BUILD_URL}artifact/${LOG_FOLDER}/${LOG_FILENAME}", level: 'INFO'
             } else {
-                log "[sh2] \u2570${boundary_marker}"
+                log "[sh2] \u2570${boundary_marker}", level: 'INFO'
             }
-            // TODO(psedlak): hide xtrace of this grep later, when proven working in all jobs
-            // for now keep it verbose, later prepend bash shebang to run without xtrace
-            sh("grep -s '[B]uild mark:' \"\$WORKSPACE/${LOG_FOLDER}/${LOG_FILENAME}\" || true")
         }
         if (error) {
-          log "[sh2] finally: ${error}", level: 'ERROR'
+          log "[sh2] ${error}", level: 'ERROR'
           throw error
         }
     }
