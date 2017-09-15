@@ -2,6 +2,13 @@
 /* Generic notification function that aims to be reusable between most
 pipelines.
 
+Parameters (all optional):
+
+subject: email subject
+format: email format, HTML if not specified. Use 'text' for text/plain
+allowedDomains : list of domains to email to. If empty all are accepted.
+msg: message to add to the body (not implemented yet)
+
 reference:
 - https://www.cloudbees.com/blog/sending-notifications-pipeline
 - https://wiki.jenkins.io/display/JENKINS/Email-ext+plugin
@@ -15,6 +22,7 @@ def call(Map params = [:]) {
     def mimeType = 'text/html'
     def format = params.format ?: 'html'
     def details = ''
+    def allowedDomains = params.allowedDomains ?: []
 
     if (format!='html') {
       mimeType = 'text/plain'
@@ -57,6 +65,11 @@ def call(Map params = [:]) {
 
     to.unique() // remove duplicates
     to.removeAll { !it } // remove null or false elements
+    // if we have a whitelist of allowed domains we use it to sanitize the list
+    if (allowedDomains) {
+      match = /.*(${allowedDomains.join('|').replaceAll('\\.','\\.')})$$/
+      to.removeAll { !(it ==~ match) }
+    }
     to = to.join(',')
 
     if (env.DEBUG) {
