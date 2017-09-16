@@ -49,9 +49,12 @@ def call(String level) {
     the value from #E5E5E5 to #CCC. This will affect only new jobs.
     30 is rendered as pure black, cannot use/override it.
     */
+    // 36 cyan - not assigned yet but is less visible magenta
+    'CMD': '\u001B[0;35m', // magenta, commands/script executed
     'INFO': '\u001B[0m', // "nothing" so we just clear, may change in future
     'PASS': '\u001B[1;32m', // bold green
     'WARN': '\u001B[1;33m', // bold yellow
+    'FAIL': '\u001B[1;31m', // bold red
     'ERROR': '\u001B[1;31m', // bold red
     'FATAL': '\u001B[1;31;43m', // bold red on yellow
     'UNSET': '\u001B[0m' // clear/defaults

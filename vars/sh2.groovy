@@ -184,7 +184,7 @@ def call(Map cmd) {
       if (cmd['echoScript']) {
           // we escape the escape in order to avoid messing ANSI coloring when we print it
           // .replaceAll('\n',/\\s\\n/) -- to make it an ungly single line
-          msg += "${getANSI('DEBUG')}[sh2] \u256D${boundary_marker}\n${user_script.stripIndent().replaceAll('\u001B','\\\\u001B')}${getANSI()}\n"
+          msg += "${getANSI('DEBUG')}[sh2] \u256D${boundary_marker}\n${getANSI('CMD')}${user_script.stripIndent().replaceAll('\u001B','\\\\u001B')}${getANSI()}\n"
       }
       if (cmd['workspaceStepNodeNum'] > 0) {
           msg += "[sh2] \uD83D\uDC41 live log at ${BUILD_URL}execution/node/${cmd['workspaceStepNodeNum']}/ws/${LOG_FOLDER}/${LOG_FILENAME}\n"
