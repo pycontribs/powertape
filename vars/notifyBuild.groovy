@@ -5,9 +5,21 @@ pipelines.
 Parameters (all optional):
 
 subject: email subject
-format: email format, HTML if not specified. Use 'text' for text/plain
+
 allowedDomains : list of domains to email to. If empty all are accepted.
-msg: message to add to the body (not implemented yet)
+
+msg: message to add to the body
+
+template: which template to use, if not specified will use default one.
+
+          groovy-html.template (default)
+          groovy-text.template
+          groovy-html-larry.template
+          html-with-health-and-console.jelly
+          html.jelly
+          html_gmail.jelly
+          static-analysis.jelly
+          text.jelly
 
 reference:
 - https://www.cloudbees.com/blog/sending-notifications-pipeline
@@ -16,21 +28,36 @@ reference:
 
 def call(Map params = [:]) {
 
+    def template2mime = [
+      "groovy-html.template": 'text/html',
+      "groovy-text.template": 'text/plain',
+      "groovy-html-larry.template": 'text/html',
+      "html-with-health-and-console.jelly": 'text/html',
+      "html.jelly": 'text/html',
+      "html_gmail.jelly": 'text/html',
+      "static-analysis.jelly": 'text/html',
+      "text.jelly": 'text/plain',
+    ]
     // build status of null means successful
     def subject = "${currentBuild.result ?: 'SUCCESSFUL'}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
     def summary = "${subject} (${env.BUILD_URL})"
-    def mimeType = 'text/html'
-    def format = params.format ?: 'html'
-    def details = ''
+    def template = params.template ?: 'groovy-html.template'
+    def msg = params.msg ?: "\nCI notifies job stakeholders. It is possible that you may receive a notification on something that is not directly related to you. In this case, please just ignore it."
     def allowedDomains = params.allowedDomains ?: []
 
-    if (format!='html') {
-      mimeType = 'text/plain'
-      details = '''${SCRIPT, template="groovy-text.template"}'''
-    } else {
-      mimeType = 'text/html'
-      details = '''${SCRIPT, template="groovy-html.template"}'''
+    // note that the expansion is implemented by the emailext itself
+    def body = "\${SCRIPT, template=\"${template}\"}"
+    def mimeType = template2mime[template]
+    def dry = params.dry ?: false
+
+    if (msg) {
+      if (mimeType == 'text/plain') {
+        body += "\n${msg}"
+      } else { // assumes is html
+        body.replaceAll("(?i)</body>", "${msg}</body>")
+      }
     }
+
     def attachLog = false
     // Allways send a mail to the requestor (the one who started the job)
     def to = []
@@ -80,22 +107,31 @@ def call(Map params = [:]) {
 
     // hipchatSend (color: color, notify: true, message: summary)
 
-    emailext (
-        subject: subject,
-        body: details,
-        mimeType: mimeType,
-        attachLog: attachLog,
-        replyTo: '$DEFAULT_REPLYTO',
-        to: to,
-        // compressLog: false
-        // recipientProviders: [
-        //   [$class: 'DevelopersRecipientProvider'],
-        //   //[$class: 'CulpritsRecipientProvider'],
-        //   //[$class: 'RequesterRecipientProvider'],
-        //   [$class: 'FailingTestSuspectsRecipientProvider'],
-        //   [$class: 'UpstreamComitterRecipientProvider']
-        //   ]
-      )
+    if (!dry) {
+      emailext (
+          subject: subject,
+          body: body,
+          mimeType: mimeType,
+          attachLog: attachLog,
+          replyTo: '$DEFAULT_REPLYTO',
+          to: to,
+          // compressLog: false
+          // recipientProviders: [
+          //   [$class: 'DevelopersRecipientProvider'],
+          //   //[$class: 'CulpritsRecipientProvider'],
+          //   //[$class: 'RequesterRecipientProvider'],
+          //   [$class: 'FailingTestSuspectsRecipientProvider'],
+          //   [$class: 'UpstreamComitterRecipientProvider']
+          //   ]
+        )
+    } else { // in dry mode we only same email body to files with log extension
+        writeFile file: template + '.eml.log',
+                  text: """To: ${to}
+Subject: ${subject}
+
+
+${body}"""
+    }
   }
 
 def call(def msg, Map params = [:]) {

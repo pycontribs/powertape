@@ -45,7 +45,7 @@ log "fatal outside ansiColor block", level: "FATAL"
 
 
 // tests the mega-wrapper that hides most used common functionality
-pipeWrapper(email: true) {
+pipeWrapper(email: false) {
   log "debug inside ansiColor block", level: "DEBUG"
   log "info inside ansiColor block", level: "INFO"
   log "warn inside ansiColor block", level: "WARN"
@@ -146,6 +146,20 @@ pipeWrapper(email: true) {
                   sh2 basename: "sh-007", echoScript: true, cmd
 
                   log "[niceprefix] ${niceprefix()}"
+
+                  log "[notifyBuild]"
+
+                  def templates = ["groovy-html.template", "groovy-text.template",
+                                   "groovy-html-larry.template", "html-with-health-and-console.jelly",
+                                   "html.jelly", "html_gmail.jelly",
+                                   "static-analysis.jelly", "text.jelly"]
+                  for(int i=0;i<templates.size();i++) {
+                      notifyBuild(email:true,
+                                  template: templates[i],
+                                  msg: "Generated using ${templates[i]} template.",
+                                  dry: false)
+                  }
+
               } // withEnv
           } // sh2
       } // end-try
