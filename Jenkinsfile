@@ -43,6 +43,10 @@ log "warn outside ansiColor block", level: "WARN"
 log "error outside ansiColor block", level: "ERROR"
 log "fatal outside ansiColor block", level: "FATAL"
 
+if (gconfig('hello') != 'world!' || gconfig('foo', 'x') != 'x' || gconfig('bar') != null) {
+   println "ERROR: gconfig test failed."
+   currentBuild.result = 'FAILURE'
+   }
 
 // tests the mega-wrapper that hides most used common functionality
 pipeWrapper(email: false) {
