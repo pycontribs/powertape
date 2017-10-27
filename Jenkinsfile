@@ -29,7 +29,7 @@ properties([
         pipelineTriggers([
                 // [$class: 'GitHubPushTrigger'], // enable only if plugin is installed
                 pollSCM('H/5 * * * *'),
-                cron('H 01 * * *')
+                // cron('H 01 * * *')
         ])
 ])
 
