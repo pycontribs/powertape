@@ -43,6 +43,9 @@ log "warn outside ansiColor block", level: "WARN"
 log "error outside ansiColor block", level: "ERROR"
 log "fatal outside ansiColor block", level: "FATAL"
 
+println "INFO: ${ false } == ${False} and ${ true } == ${ True }"
+println "INFO: ${ false  == False } vs ${ true == True }"
+
 if (gconfig('hello') != 'world!' || gconfig('foo', 'x') != 'x' || gconfig('bar') != null) {
    println "ERROR: gconfig test failed."
    currentBuild.result = 'FAILURE'
