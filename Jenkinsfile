@@ -75,7 +75,12 @@ pipeWrapper(email: false) {
           // we don't want any leftovers to influence our execution (like previous logs)
           step([$class: 'WsCleanup'])
 
-          checkout scm
+          checkout([$class: 'GitSCM',
+               branches: [[name: '*/master']], // scm.branches,
+               doGenerateSubmoduleConfigurations: scm.doGenerateSubmoduleConfigurations,
+               extensions: scm.extensions,
+               userRemoteConfigs: scm.userRemoteConfigs
+          ])
 
           // start-of-unittests
           stage('gitClean') {
