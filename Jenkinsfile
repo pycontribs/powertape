@@ -68,6 +68,9 @@ pipeWrapper(email: false) {
   env.LSCOLORS = env.LSCOLORS ?: 'ExFxCxDxBxegedabagacad'
   def error = null
 
+  // testing that we can get global settings using gconfig()
+  println "hello=${gconfig('hello')} wrong_key=${gconfig('wron_key', 'default')}"
+
   node('master') {
 
       try {
