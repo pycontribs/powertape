@@ -52,7 +52,7 @@ if (gconfig('hello') != 'world!' || gconfig('foo', 'x') != 'x' || gconfig('bar')
    }
 
 // tests the mega-wrapper that hides most used common functionality
-pipeWrapper(email: false) {
+pipeWrapper(email: false, gerritReport: true) {
   log "debug inside ansiColor block", level: "DEBUG"
   log "info inside ansiColor block", level: "INFO"
   log "warn inside ansiColor block", level: "WARN"
@@ -189,6 +189,8 @@ pipeWrapper(email: false) {
               // caseSensitive: false
               // onlyIfSuccessful: false
           } // end-clean
+          println getBuildInfo(currentBuild)
+          println getBuildMessage()
       } // finally
   } // node
 

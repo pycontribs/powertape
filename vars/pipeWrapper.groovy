@@ -15,6 +15,7 @@
 
   - email: false
   - emailPlain: false
+  - gerritReport: false
 
 */
 
@@ -31,6 +32,13 @@ def call(Map args, Closure body) {
           currentBuild.result = 'FAILURE'
       }
       finally {
+
+        // report
+        if (args.get('gerritReport', true)) {
+          println getBuildMessage()
+          // TODO: add message to gerrit review
+        }
+
         // do some report, like sending emails
         if (args.get('email', false)) {
           notifyBuild() // implies format: 'html'
