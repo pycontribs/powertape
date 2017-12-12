@@ -8,7 +8,7 @@ def call() {
           failed_stages.add(s.name)
         }
     }
-    failed_stages = failed_stages.join(',')
+    failed_stages = failed_stages.join(',') + ' '
 
-    return "${currentBuild.currentResult}: ${failed_stages}"
+    return "${currentBuild.currentResult}: ${failed_stages}${currentBuild.absoluteUrl}"
 }
