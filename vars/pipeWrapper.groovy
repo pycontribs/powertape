@@ -38,8 +38,10 @@ def call(Map args, Closure body) {
         if (args.get('gerritReport', true)) {
           msg = getBuildMessage()
           result['buildMessage'] = msg
-          println msg
-          // TODO: add message to gerrit review
+
+          if(env.GERRIT_CHANGE_NUMBER ?: false) {
+            setGerritReview unsuccessfulMessage: msg
+          }
         }
 
         // do some report, like sending emails
