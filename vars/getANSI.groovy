@@ -51,12 +51,21 @@ def call(String level) {
     */
     // 36 cyan - not assigned yet but is less visible magenta
     'CMD': '\u001B[0;35m', // magenta, commands/script executed
+
     'INFO': '\u001B[0m', // "nothing" so we just clear, may change in future
+
     'PASS': '\u001B[1;32m', // bold green
+    'SUCCESS': '\u001B[1;32m', // bold green -- currentBuild.result
+
     'WARN': '\u001B[1;33m', // bold yellow
+    'UNSTABLE': '\u001B[1;33m', // bold yellow -- currentBuild.result
+
     'FAIL': '\u001B[1;31m', // bold red
+    'FAILURE': '\u001B[1;31m', // bold red -- currentBuild.result
     'ERROR': '\u001B[1;31m', // bold red
+
     'FATAL': '\u001B[1;31;43m', // bold red on yellow
+
     'UNSET': '\u001B[0m' // clear/defaults
   ]
 

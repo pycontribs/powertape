@@ -10,5 +10,6 @@ def call() {
     }
     failed_stages = failed_stages.join(',') + ' '
 
+    log "${failed_stages}${currentBuild.absoluteUrl}", level: currentBuild.currentResult
     return "${currentBuild.currentResult}: ${failed_stages}${currentBuild.absoluteUrl}"
 }
