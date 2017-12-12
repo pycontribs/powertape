@@ -20,6 +20,7 @@
 */
 
 def call(Map args, Closure body) {
+  result = {}
   // xterm is needed to be able to configure colors in Jenkins
   ansiColor('xterm') {
     timestamps {
@@ -35,7 +36,9 @@ def call(Map args, Closure body) {
 
         // report
         if (args.get('gerritReport', true)) {
-          println getBuildMessage()
+          msg = getBuildMessage()
+          result['buildMessage'] = msg
+          println msg
           // TODO: add message to gerrit review
         }
 
@@ -50,6 +53,7 @@ def call(Map args, Closure body) {
 
     } // timestamps
   } // ansiColor
+  return result
 } // pipeWrapper
 
 def call(Closure body) {
