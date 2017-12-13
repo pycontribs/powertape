@@ -15,7 +15,6 @@
 
   - email: false
   - emailPlain: false
-  - gerritReport: false
 
 */
 
@@ -34,11 +33,8 @@ def call(Map args, Closure body) {
       }
       finally {
 
-        // report
-        if (args.get('gerritReport', true)) {
-          msg = getBuildMessage()
-          result['buildMessage'] = msg
-        }
+        msg = getBuildMessage()
+        result['buildMessage'] = msg
 
         // do some report, like sending emails
         if (args.get('email', false)) {
