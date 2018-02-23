@@ -4,3 +4,5 @@ simplify pipeline development.
 This project also includes a python package with the same name
 which is used solely as sample package to be build and tested
 with Jenkins.
+
+Some stupid change on devel branch. Do not merge me!
